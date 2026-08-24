@@ -1,0 +1,5 @@
+/ /en 302
+/en/services /en/services/rental 301
+/fr/services /fr/services/rental 301
+/ar/* /en/:splat 302
+/* /index.html 200

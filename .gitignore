@@ -1,0 +1,7 @@
+node_modules/
+dist/
+report_render/
+*.log
+.env
+.env.*
+!.env.example
