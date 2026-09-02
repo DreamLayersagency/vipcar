@@ -1,0 +1,23 @@
+---
+description: Gateway HTTP API conventions, DTOs, and error shape
+globs: apps/gateway/**/*.ts
+alwaysApply: false
+---
+
+# API conventions
+
+- Prefix all HTTP routes with `/v1`. Serve OpenAPI at `/v1/docs`.
+- Use `ValidationPipe({ whitelist: true, transform: true })`.
+- Success: `{ data }` or `{ data, meta }`. Errors: `{ error: { code, message, details } }`.
+- Auth: `Authorization: Bearer`. Locale: `Accept-Language: en | fr` (default `en`).
+- Public GETs for catalog/CMS. `POST /v1/quotes` may be anonymous. Staff routes require `ops_agent` or `admin`.
+- Rate-limit `/v1/auth/*` more strictly than public reads.
+- Follow `docs/api/conventions.md` for quote payload and status codes (`401`, `403`, `404`, `409`, `429`, `502`).
+
+```typescript
+// ❌ BAD
+return { ok: true, user };
+
+// ✅ GOOD
+return { data: { user, accessToken, refreshToken } };
+```

@@ -1,7 +1,9 @@
 node_modules/
 dist/
+**/dist/
 report_render/
 *.log
 .env
 .env.*
 !.env.example
+apps/identity/generated/

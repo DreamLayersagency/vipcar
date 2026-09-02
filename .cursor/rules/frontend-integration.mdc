@@ -1,0 +1,21 @@
+---
+description: Public site talks only to the gateway; keep SEO and WhatsApp as a channel
+globs: apps/web/**/*.{js,jsx,ts,tsx}
+alwaysApply: false
+---
+
+# Frontend integration
+
+- Call only `VITE_API_URL` (gateway). Never fetch microservices directly.
+- Quote/contact submit must persist via `POST /v1/quotes` or `POST /v1/contact` once those routes exist. WhatsApp is a follow-up channel, not storage.
+- Keep bilingual routes and prerender. Fleet/CMS data will replace hardcoded arrays without changing URL slugs.
+- Indicative TND prices are display-only until a confirmed quote is returned.
+- Keep analytics events: `quote_submit`, `service_selected`, `phone_click`, `whatsapp_click`, `email_click`.
+
+```javascript
+// ❌ BAD — message is the only record
+location.href = `${WA}?text=${encodeURIComponent(msg)}`;
+
+// ✅ GOOD — persist, then optionally notify
+await fetch(`${apiUrl}/v1/quotes`, { method: 'POST', body: JSON.stringify(payload) });
+```

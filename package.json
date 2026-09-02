@@ -1,23 +1,22 @@
 {
-  "name": "vipcar-tunisia",
+  "name": "vipcar",
   "private": true,
   "version": "1.0.0",
-  "type": "module",
+  "workspaces": [
+    "apps/*",
+    "libs/*"
+  ],
   "scripts": {
-    "dev": "vite",
-    "build": "vite build && node scripts/prerender.mjs",
-    "preview": "vite preview"
-  },
-  "dependencies": {
-    "@vitejs/plugin-react": "latest",
-    "vite": "latest",
-    "typescript": "latest",
-    "react": "latest",
-    "react-dom": "latest",
-    "lucide-react": "latest",
-    "gsap": "latest",
-    "lenis": "latest",
-    "playwright": "latest"
-  },
-  "devDependencies": {}
+    "dev:web": "npm run dev -w @vipcar/web",
+    "dev:gateway": "npm run start:dev -w @vipcar/gateway",
+    "dev:identity": "npm run start:dev -w @vipcar/identity",
+    "build:contracts": "npm run build -w @vipcar/contracts",
+    "build:gateway": "npm run build -w @vipcar/gateway",
+    "build:identity": "npm run build -w @vipcar/identity",
+    "build:web": "npm run build -w @vipcar/web",
+    "prisma:identity:generate": "node scripts/with-env.cjs npx prisma generate",
+    "prisma:identity:migrate": "node scripts/with-env.cjs npx prisma migrate dev",
+    "prisma:identity:deploy": "node scripts/with-env.cjs npx prisma migrate deploy",
+    "postinstall": "npm run build -w @vipcar/contracts"
+  }
 }

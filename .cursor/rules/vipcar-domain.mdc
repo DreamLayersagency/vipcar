@@ -1,0 +1,16 @@
+---
+description: VIPCAR domain language and product constraints for every change
+alwaysApply: true
+---
+
+# VIPCAR domain
+
+- Business: premium car rental, airport transfers, and private chauffeur in Tunisia.
+- Currency is **TND**. Locales are **en** and **fr**. Do not add a third locale unless asked.
+- Service types: `rental` | `transfer` | `chauffeur`. Do not invent a fourth type without a domain doc update.
+- Roles: `customer` | `corporate_manager` | `driver` | `ops_agent` | `admin`.
+- Website prices are **indicative** until booking + billing confirm a quote.
+- WhatsApp (`wa.me`) is a **notification channel**, never the source of truth. Persist quotes and bookings in the API.
+- Public SEO routes stay `/{en|fr}/...` (fleet, services, booking, destinations, blog, legal). Do not rename them.
+- Read `docs/domain/entities.md` and `docs/domain/features.md` before adding fields.
+- Do not commit secrets. Use `.env.example` only.

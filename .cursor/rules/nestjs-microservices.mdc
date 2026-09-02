@@ -1,0 +1,24 @@
+---
+description: NestJS microservice patterns, NATS, and schema ownership
+globs: apps/{gateway,identity,catalog,cms,booking,fleet,dispatch,billing,notify}/**/*.{ts,json}
+alwaysApply: false
+---
+
+# NestJS microservices
+
+- Each app owns one PostgreSQL schema. Never JOIN another service's tables.
+- Browser traffic goes only to `apps/gateway`. Other apps speak NATS.
+- Commands: `{service}.{action}` request/response. Events: `{domain}.{entity}.{verb}` on JetStream.
+- Put DTOs and event names in `libs/contracts`. Do not duplicate payload types per app.
+- Validate at the gateway and again at the service handler.
+- After a successful write, emit the event from an outbox (or after commit). Consumers must be idempotent on `eventId`.
+- `notify` must not block the producer; enqueue and retry.
+- Map failures to stable `error.code` values. Do not leak stack traces to HTTP.
+
+```typescript
+// ❌ BAD — identity querying booking tables
+const bookings = await this.prisma.$queryRaw`SELECT * FROM booking.bookings`;
+
+// ✅ GOOD — ask booking over NATS
+return this.nats.send('booking.quote.list', { customerId }).pipe(timeout(5000));
+```
