@@ -1,0 +1,13 @@
+---
+description: Admin backoffice is path routing in apps/web with modern ops UX
+globs: apps/web/**/admin/**/*.{js,jsx,ts,tsx,css}
+alwaysApply: false
+---
+
+# Admin backoffice (`/admin`)
+
+- Admin lives in **`apps/web`** under `/admin/*` — **same port** as the public site. Never add a second Vite app/port for admin.
+- Routes: `/admin/login`, `/admin`, `/admin/quotes`, `/admin/vehicles`, `/admin/articles`, `/admin/fleet`, `/admin/dispatch`, `/admin/corporate`.
+- Call only the gateway (`VITE_API_URL`). Roles: `ops_agent` | `admin`.
+- UX: modern ops UI — clear nav shell, dense readable tables, status chips, loading/empty/error states, confirm dialogs. Brand accent from VIPCAR (green/gold); avoid purple gradients and noisy cards.
+- Keep `/admin` out of public sitemap/prerender. Public SEO stays `/{en|fr}/...`.

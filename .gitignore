@@ -7,3 +7,10 @@ report_render/
 .env.*
 !.env.example
 apps/identity/generated/
+apps/catalog/generated/
+apps/cms/generated/
+apps/booking/generated/
+apps/notify/generated/
+apps/fleet/generated/
+apps/billing/generated/
+apps/dispatch/generated/

@@ -1,0 +1,98 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// Locale for driver languages — matches catalog LOCALES (en | fr).
+enum Locale {
+  en
+  fr
+}
+
+enum DriverStatus {
+  available
+  on_trip
+  off_duty
+  inactive
+}
+
+/// Assignment is transfer or chauffeur only (not rental).
+enum AssignmentType {
+  transfer
+  chauffeur
+}
+
+enum AssignmentStatus {
+  pending
+  assigned
+  en_route
+  arrived
+  completed
+  cancelled
+}
+
+enum ChauffeurDuration {
+  hourly
+  half_day @map("half-day")
+  full_day @map("full-day")
+}
+
+/// Driver profile. Links to identity User with role `driver` via userId only (no SQL FK).
+model Driver {
+  id         String       @id @default(uuid())
+  /// Identity User.id with role driver — optional until linked; unique when set.
+  userId     String?      @unique
+  name       String
+  languages  Locale[]
+  /// Catalog Hub.id reference only — never join catalog in SQL.
+  hubId      String
+  status     DriverStatus @default(available)
+  phone      String
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+  assignments Assignment[]
+
+  @@index([hubId])
+  @@index([status])
+  @@map("drivers")
+}
+
+/// Transfer or chauffeur job linked to a booking (bookingId is a copied UUID, not a cross-schema FK).
+model Assignment {
+  id           String             @id @default(uuid())
+  /// Booking.id reference only — no SQL join to booking schema.
+  bookingId    String             @unique
+  driverId     String?
+  driver       Driver?            @relation(fields: [driverId], references: [id], onDelete: SetNull)
+  type         AssignmentType
+  /// Copied from booking/quote for transfer jobs (G2).
+  flightNumber String?
+  /// Snapshot for chauffeur jobs (G3).
+  duration     ChauffeurDuration?
+  status       AssignmentStatus   @default(pending)
+  scheduledAt  DateTime
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+
+  @@index([driverId])
+  @@index([status])
+  @@index([scheduledAt])
+  @@map("assignments")
+}
+
+/// Transactional outbox — write with Assignment updates; publish after commit.
+model OutboxEvent {
+  id          String    @id @default(uuid())
+  eventName   String
+  payload     Json
+  createdAt   DateTime  @default(now())
+  publishedAt DateTime?
+
+  @@index([publishedAt])
+  @@map("outbox_events")
+}

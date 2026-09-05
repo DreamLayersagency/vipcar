@@ -1,0 +1,3 @@
+export const PAYMENT_PROVIDER = Symbol('PAYMENT_PROVIDER');
+export const PAYMENT_PROVIDERS_MAP = Symbol('PAYMENT_PROVIDERS_MAP');
+export const BILLING_NATS = 'BILLING_NATS';

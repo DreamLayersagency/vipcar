@@ -1,0 +1,105 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum PaymentKind {
+  deposit
+  rental
+  transfer
+  chauffeur
+  invoice
+}
+
+enum PaymentStatus {
+  pending
+  authorized
+  captured
+  failed
+  refunded
+  released
+}
+
+enum InvoiceStatus {
+  draft
+  issued
+  paid
+  void
+}
+
+model Payment {
+  id          String        @id @default(uuid())
+  bookingId   String
+  kind        PaymentKind
+  amountTnd   Decimal       @db.Decimal(12, 3)
+  /// konnect | flouci | stripe | manual — secrets never stored; only provider name + ref
+  provider    String
+  providerRef String?
+  status      PaymentStatus @default(pending)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([bookingId])
+  @@index([status])
+  @@unique([provider, providerRef])
+  @@map("payments")
+}
+
+/// Invoicing details for a corporate account (identity CorporateAccount.id).
+/// Source of truth for billing.invoice.create buyer snapshot (H4).
+model CorporateBillingProfile {
+  id                 String   @id @default(uuid())
+  /// identity CorporateAccount.id — no cross-schema FK
+  corporateAccountId String   @unique
+  companyName        String
+  billingEmail       String
+  taxId              String?
+  notes              String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@map("corporate_billing_profiles")
+}
+
+/// Corporate / post-paid invoices (F7: create via billing.invoice.create).
+model Invoice {
+  id                 String        @id @default(uuid())
+  number             String        @unique
+  bookingId          String?
+  customerId         String?
+  corporateAccountId String?
+  /// Snapshot from CorporateBillingProfile at create time (immutable for PDF).
+  companyName        String?
+  billingEmail       String?
+  taxId              String?
+  lines              Json
+  subtotalTnd        Decimal       @db.Decimal(12, 3)
+  taxTnd             Decimal       @db.Decimal(12, 3)
+  totalTnd           Decimal       @db.Decimal(12, 3)
+  pdfKey             String?
+  status             InvoiceStatus @default(draft)
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+
+  @@index([bookingId])
+  @@index([corporateAccountId])
+  @@index([status])
+  @@map("invoices")
+}
+
+/// Transactional outbox — write with Payment updates; publish after commit.
+model OutboxEvent {
+  id          String    @id @default(uuid())
+  eventName   String
+  payload     Json
+  createdAt   DateTime  @default(now())
+  publishedAt DateTime?
+
+  @@index([publishedAt])
+  @@map("outbox_events")
+}

@@ -1,0 +1,1 @@
+export const FLEET_SERVICE = 'FLEET_SERVICE';

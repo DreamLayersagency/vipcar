@@ -167,6 +167,7 @@ These are in scope for the NestJS backend (see [TASKS.md](../backend/TASKS.md)):
 | F-22 Invoices (especially corporate) | corporate_manager, admin | billing |
 | F-23 Notifications (WhatsApp Cloud + email) | all | notify |
 | F-24 Cancellation / amendment per policy | customer, ops_agent | booking, billing |
+| F-25 Visual admin backoffice (`/admin` in `apps/web`) | ops_agent, admin | same port as site; gateway `/v1/ops/*` (Phase J) |
 
 ---
 

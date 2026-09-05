@@ -1,0 +1,1 @@
+export const DISPATCH_NATS = 'DISPATCH_NATS';

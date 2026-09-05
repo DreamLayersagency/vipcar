@@ -1,0 +1,42 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum DeliveryChannel {
+  whatsapp
+  email
+}
+
+enum DeliveryStatus {
+  queued
+  sent
+  failed
+}
+
+/// Outbox / delivery log — enqueue first, send with retry; never blocks quote create.
+model DeliveryLog {
+  id           String          @id @default(uuid())
+  eventId      String
+  eventName    String
+  channel      DeliveryChannel
+  to           String
+  template     String
+  payload      Json
+  status       DeliveryStatus  @default(queued)
+  error        String?
+  attempts     Int             @default(0)
+  nextAttemptAt DateTime       @default(now())
+  createdAt    DateTime        @default(now())
+  sentAt       DateTime?
+
+  @@unique([eventId, channel, template])
+  @@index([status, nextAttemptAt])
+  @@index([eventName])
+  @@map("delivery_logs")
+}

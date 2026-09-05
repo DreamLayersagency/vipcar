@@ -1,0 +1,91 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum VehicleCategory {
+  Luxury
+  SUV
+  Sedan
+  VanAndGroup @map("Van & Group")
+  Compact
+  Economy
+  PickUp      @map("Pick-up")
+}
+
+enum VehicleTier {
+  Luxury
+  Premium
+  Standard
+  Economy
+}
+
+enum Transmission {
+  Automatic
+  Manual
+}
+
+enum LocationType {
+  city
+  airport
+  hotel
+  other
+}
+
+model Hub {
+  id        String         @id @default(uuid())
+  slug      String         @unique
+  name      String
+  timezone  String         @default("Africa/Tunis")
+  vehicles  VehicleModel[]
+  locations Location[]
+
+  @@map("hubs")
+}
+
+model VehicleModel {
+  id                String          @id @default(uuid())
+  slug              String          @unique
+  name              String
+  category          VehicleCategory
+  tier              VehicleTier
+  seats             Int
+  bags              Int
+  transmission      Transmission
+  imageKey          String
+  baseDailyPriceTnd Decimal         @db.Decimal(12, 3)
+  defaultHubId      String?
+  defaultHub        Hub?            @relation(fields: [defaultHubId], references: [id])
+  isPublished       Boolean         @default(false)
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  @@index([category])
+  @@index([isPublished])
+  @@map("vehicle_models")
+}
+
+model Location {
+  id                String       @id @default(uuid())
+  slug              String       @unique
+  nameEn            String
+  nameFr            String
+  type              LocationType
+  airportName       String?
+  hubId             String?
+  hub               Hub?         @relation(fields: [hubId], references: [id])
+  supportsRental    Boolean      @default(true)
+  supportsTransfer  Boolean      @default(true)
+  supportsChauffeur Boolean      @default(false)
+  isPublished       Boolean      @default(false)
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  @@index([isPublished])
+  @@map("locations")
+}

@@ -74,8 +74,8 @@ confirmed / in_progress → no_show
 |---|---|---|
 | id | uuid | |
 | name | string | company, hotel, agency |
-| billingEmail | string | |
-| notes | string? | invoicing requirements |
+| billingEmail | string | contact; invoicing profile lives in billing (H4) |
+| notes | string? | ops notes |
 | isActive | boolean | |
 
 ---
@@ -180,7 +180,9 @@ Lead created from the widget, wizard, or staff.
 | pickupLabel | string | |
 | dropoffLabel | string? | |
 | startAt, endAt | datetime | |
-| priceTnd | decimal | confirmed |
+| duration | ChauffeurDuration? | chauffeur snapshot from quote |
+| flightNumber | string? | transfer snapshot from quote |
+| priceTnd | decimal | confirmed price snapshot for billing |
 | depositTnd | decimal | |
 | cancellationPolicySnapshot | json? | |
 | createdAt, updatedAt | datetime | |
@@ -199,7 +201,7 @@ Physical asset.
 |---|---|---|
 | id | uuid | |
 | modelId | uuid | catalog VehicleModel id (reference) |
-| plate | string | unique |
+| plate | string | unique per hub |
 | hubId | uuid | |
 | status | UnitStatus | |
 | depositAmountTnd | decimal | per-unit or inherited from model |
@@ -211,10 +213,12 @@ Physical asset.
 | id | uuid | |
 | unitId | uuid | |
 | bookingId | uuid? | reference only |
-| startAt, endAt | datetime | exclusive end recommended |
+| startAt, endAt | datetime | half-open `[startAt, endAt)`; **endAt is exclusive** |
 | reason | string | booking \| maintenance \| hold |
 
-Availability = no overlapping `CalendarBlock` for the requested range at the requested hub/model.
+**Exclusive-end rule:** all fleet date ranges are half-open intervals `[startAt, endAt)`. Two ranges overlap when `a.startAt < b.endAt AND b.startAt < a.endAt`. A block ending at `T` and another starting at `T` do **not** conflict (same-day turnaround is allowed).
+
+Availability = unit at the requested hub/model whose status is not `maintenance`/`inactive`, and with no overlapping `CalendarBlock` for the requested range.
 
 ---
 
@@ -240,8 +244,8 @@ Availability = no overlapping `CalendarBlock` for the requested range at the req
 | bookingId | uuid | |
 | driverId | uuid? | |
 | type | transfer \| chauffeur | |
-| flightNumber | string? | |
-| duration | ChauffeurDuration? | |
+| flightNumber | string? | transfer — copied from quote |
+| duration | ChauffeurDuration? | chauffeur |
 | status | AssignmentStatus | |
 | scheduledAt | datetime | |
 
@@ -261,9 +265,23 @@ Availability = no overlapping `CalendarBlock` for the requested range at the req
 | providerRef | string? | |
 | status | PaymentStatus | |
 
+### CorporateBillingProfile
+
+Invoicing details for a corporate account (identity `CorporateAccount.id` reference only). Used by `billing.invoice.create`.
+
+| Field | Type | Notes |
+|---|---|---|
+| id | uuid | |
+| corporateAccountId | uuid | unique; identity account id |
+| companyName | string | legal / invoice buyer name |
+| billingEmail | string | invoice delivery |
+| taxId | string? | Tunisian tax / matricule fiscale |
+| notes | string? | invoicing requirements |
+| createdAt, updatedAt | datetime | |
+
 ### Invoice
 
-Corporate and post-paid rentals: number, customer/account, lines, tax, PDF key, status.
+Corporate and post-paid rentals: number, customer/account, **buyer snapshot** (`companyName`, `billingEmail`, `taxId` from CorporateBillingProfile at create), lines, tax, PDF key, status.
 
 Deposit **release** after vehicle return in good condition is a billing state transition (`released`), triggered by fleet/ops events — not a silent WhatsApp message.
 

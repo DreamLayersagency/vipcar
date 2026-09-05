@@ -105,15 +105,25 @@ Passwords: min 8 characters. Emails stored lowercase. Never return `passwordHash
 | POST | `/v1/billing/checkout` | customer |
 | POST | `/v1/billing/webhooks/:provider` | signature |
 
-Staff (`ops_agent`, `admin`):
+Staff (`ops_agent`, `admin`); trip status also allows `driver`:
 
 | Method | Path |
 |---|---|
+| GET | `/v1/ops/catalog/vehicles` |
+| GET | `/v1/ops/catalog/vehicles/:slug` |
+| PUT | `/v1/ops/catalog/vehicles/:slug` |
+| GET | `/v1/ops/cms/articles` |
+| GET | `/v1/ops/cms/articles/:slug` |
+| PUT | `/v1/ops/cms/articles/:slug` |
 | GET | `/v1/ops/quotes` |
 | PATCH | `/v1/ops/quotes/:id` |
+| POST | `/v1/ops/quotes/:id/confirm` |
 | POST | `/v1/ops/bookings/:id/confirm` |
 | GET | `/v1/ops/fleet/availability` |
 | POST | `/v1/ops/dispatch/assign` |
+| POST | `/v1/ops/dispatch/trip/status` |
+
+Unpublished vehicles/articles (`isPublished=false`) are writable by staff but never returned from public catalog/CMS GETs.
 
 ---
 
@@ -158,6 +168,6 @@ Fleet: `?category=SUV`. CMS: `?locale=fr`.
 
 - Validate DTOs with `ValidationPipe({ whitelist: true, transform: true })`.
 - Timeouts on NATS requests (e.g. 5s) → `502`.
-- CORS: `web` origin + admin origin.
+- CORS: public web origin (covers `/admin` on the same origin — no separate admin port).
 - Rate-limit auth routes more strictly than public GETs.
 - Never proxy raw microservice errors; map to `error.code`.

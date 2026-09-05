@@ -63,6 +63,204 @@ services:
       timeout: 5s
       retries: 12
 
+  catalog:
+    build:
+      context: .
+      dockerfile: apps/catalog/Dockerfile
+    environment:
+      DATABASE_URL: postgresql://vipcar:vipcar@postgres:5432/vipcar?schema=catalog
+      NATS_URL: nats://nats:4222
+      CATALOG_HTTP_PORT: 3002
+    ports:
+      - "3002:3002"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      nats:
+        condition: service_started
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3002/health').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  cms:
+    build:
+      context: .
+      dockerfile: apps/cms/Dockerfile
+    environment:
+      DATABASE_URL: postgresql://vipcar:vipcar@postgres:5432/vipcar?schema=cms
+      NATS_URL: nats://nats:4222
+      CMS_HTTP_PORT: 3003
+    ports:
+      - "3003:3003"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      nats:
+        condition: service_started
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3003/health').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  booking:
+    build:
+      context: .
+      dockerfile: apps/booking/Dockerfile
+    environment:
+      DATABASE_URL: postgresql://vipcar:vipcar@postgres:5432/vipcar?schema=booking
+      NATS_URL: nats://nats:4222
+      BOOKING_HTTP_PORT: 3004
+    ports:
+      - "3004:3004"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      nats:
+        condition: service_started
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3004/health').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  notify:
+    build:
+      context: .
+      dockerfile: apps/notify/Dockerfile
+    environment:
+      DATABASE_URL: postgresql://vipcar:vipcar@postgres:5432/vipcar?schema=notify
+      NATS_URL: nats://nats:4222
+      NOTIFY_HTTP_PORT: 3005
+      OPS_WHATSAPP_TO: ${OPS_WHATSAPP_TO:-21655771077}
+      OPS_EMAIL_TO: ${OPS_EMAIL_TO:-info@vipcar.com.tn}
+      NOTIFY_CHANNELS: ${NOTIFY_CHANNELS:-whatsapp,email}
+      NOTIFY_MOCK_FAIL: ${NOTIFY_MOCK_FAIL:-}
+    ports:
+      - "3005:3005"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      nats:
+        condition: service_started
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3005/health').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  fleet:
+    build:
+      context: .
+      dockerfile: apps/fleet/Dockerfile
+    environment:
+      DATABASE_URL: postgresql://vipcar:vipcar@postgres:5432/vipcar?schema=fleet
+      NATS_URL: nats://nats:4222
+      FLEET_HTTP_PORT: 3006
+      REDIS_URL: redis://redis:6379
+      FLEET_HOLD_TTL_SECONDS: ${FLEET_HOLD_TTL_SECONDS:-600}
+    ports:
+      - "3006:3006"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      nats:
+        condition: service_started
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3006/health').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  billing:
+    build:
+      context: .
+      dockerfile: apps/billing/Dockerfile
+    environment:
+      DATABASE_URL: postgresql://vipcar:vipcar@postgres:5432/vipcar?schema=billing
+      NATS_URL: nats://nats:4222
+      BILLING_HTTP_PORT: 3007
+      BILLING_DEFAULT_PROVIDER: ${BILLING_DEFAULT_PROVIDER:-manual}
+    ports:
+      - "3007:3007"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      nats:
+        condition: service_started
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3007/health').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  dispatch:
+    build:
+      context: .
+      dockerfile: apps/dispatch/Dockerfile
+    environment:
+      DATABASE_URL: postgresql://vipcar:vipcar@postgres:5432/vipcar?schema=dispatch
+      NATS_URL: nats://nats:4222
+      DISPATCH_HTTP_PORT: 3008
+    ports:
+      - "3008:3008"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      nats:
+        condition: service_started
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3008/health').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
   gateway:
     build:
       context: .
@@ -76,6 +274,16 @@ services:
       - "3000:3000"
     depends_on:
       identity:
+        condition: service_healthy
+      catalog:
+        condition: service_healthy
+      cms:
+        condition: service_healthy
+      booking:
+        condition: service_healthy
+      billing:
+        condition: service_healthy
+      dispatch:
         condition: service_healthy
       nats:
         condition: service_started

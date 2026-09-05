@@ -1,0 +1,57 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// Physical unit lifecycle — catalog modelId is a copied UUID, not a cross-schema FK.
+enum UnitStatus {
+  available
+  reserved
+  rented
+  maintenance
+  inactive
+}
+
+enum CalendarBlockReason {
+  booking
+  maintenance
+  hold
+}
+
+model VehicleUnit {
+  id                String     @id @default(uuid())
+  /// Catalog VehicleModel.id reference only — never join catalog in SQL.
+  modelId           String
+  plate             String
+  /// Catalog Hub.id reference only.
+  hubId             String
+  status            UnitStatus @default(available)
+  depositAmountTnd  Decimal    @db.Decimal(12, 3)
+  calendarBlocks    CalendarBlock[]
+
+  @@unique([hubId, plate])
+  @@index([modelId])
+  @@index([hubId])
+  @@index([status])
+  @@map("vehicle_units")
+}
+
+model CalendarBlock {
+  id        String              @id @default(uuid())
+  unitId    String
+  unit      VehicleUnit         @relation(fields: [unitId], references: [id], onDelete: Cascade)
+  /// Booking.id reference only — no SQL join to booking schema.
+  /// Unique when set so booking.confirmed / fleet.calendar.block stay idempotent.
+  bookingId String?             @unique
+  startAt   DateTime
+  endAt     DateTime
+  reason    CalendarBlockReason
+
+  @@index([unitId, startAt, endAt])
+  @@map("calendar_blocks")
+}

@@ -3,6 +3,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { join } from 'path';
 import { AuthModule } from './auth/auth.module';
+import { CorporateAccountsModule } from './corporate/corporate-accounts.module';
 import { HealthController } from './health.controller';
 
 @Module({
@@ -22,6 +23,7 @@ import { HealthController } from './health.controller';
       }),
     }),
     AuthModule,
+    CorporateAccountsModule,
   ],
   controllers: [HealthController],
 })

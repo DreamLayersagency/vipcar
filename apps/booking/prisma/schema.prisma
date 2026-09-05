@@ -1,0 +1,127 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ServiceType {
+  rental
+  transfer
+  chauffeur
+}
+
+enum QuoteStatus {
+  received
+  quoted
+  expired
+  converted
+  cancelled
+}
+
+enum Channel {
+  web
+  whatsapp
+  staff
+  contact
+}
+
+enum Locale {
+  en
+  fr
+}
+
+enum ChauffeurDuration {
+  hourly
+  half_day @map("half-day")
+  full_day @map("full-day")
+}
+
+enum BookingStatus {
+  quote_requested
+  quoted
+  awaiting_payment
+  confirmed
+  in_progress
+  completed
+  cancelled
+  no_show
+}
+
+model Quote {
+  id                  String             @id @default(uuid())
+  service             ServiceType
+  status              QuoteStatus        @default(received)
+  vehicleModelId      String?
+  pickupLocationId    String?
+  pickupLabel         String?
+  dropoffLocationId   String?
+  dropoffLabel        String?
+  startAt             DateTime
+  endAt               DateTime?
+  passengers          Int?
+  duration            ChauffeurDuration?
+  flightNumber        String?
+  notes               String?
+  customerName        String
+  customerPhone       String
+  customerEmail       String?
+  customerId          String?
+  language            Locale
+  channel             Channel
+  indicativePriceTnd  Decimal?           @db.Decimal(12, 3)
+  confirmedPriceTnd   Decimal?           @db.Decimal(12, 3)
+  createdAt           DateTime           @default(now())
+  booking             Booking?
+
+  @@index([status])
+  @@index([createdAt])
+  @@index([channel])
+  @@map("quotes")
+}
+
+model Booking {
+  id                          String        @id @default(uuid())
+  quoteId                     String        @unique
+  quote                       Quote         @relation(fields: [quoteId], references: [id])
+  customerId                  String
+  type                        ServiceType
+  status                      BookingStatus @default(quote_requested)
+  vehicleModelId              String?
+  unitId                      String?
+  driverId                    String?
+  pickupLabel                 String
+  dropoffLabel                String?
+  startAt                     DateTime
+  endAt                       DateTime
+  /// Chauffeur duration snapshot from quote (hourly | half-day | full-day).
+  duration                    ChauffeurDuration?
+  /// Transfer flight number snapshot from quote (dispatch Assignment).
+  flightNumber                String?
+  /// Confirmed price snapshot used by billing (from quote.confirmedPriceTnd).
+  priceTnd                    Decimal       @db.Decimal(12, 3)
+  depositTnd                  Decimal       @db.Decimal(12, 3)
+  cancellationPolicySnapshot  Json?
+  createdAt                   DateTime      @default(now())
+  updatedAt                   DateTime      @updatedAt
+
+  @@index([status])
+  @@index([customerId])
+  @@index([startAt, endAt])
+  @@map("bookings")
+}
+
+/// Transactional outbox — write in same TX as Quote; publish after commit.
+model OutboxEvent {
+  id          String    @id @default(uuid())
+  eventName   String
+  payload     Json
+  createdAt   DateTime  @default(now())
+  publishedAt DateTime?
+
+  @@index([publishedAt])
+  @@map("outbox_events")
+}

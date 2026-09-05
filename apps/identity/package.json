@@ -8,7 +8,12 @@
     "start:dev": "prisma generate && nest start --watch",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev --name init",
-    "prisma:deploy": "prisma migrate deploy"
+    "prisma:deploy": "prisma migrate deploy",
+    "prisma:seed": "prisma db seed",
+    "seed": "node prisma/seed.cjs"
+  },
+  "prisma": {
+    "seed": "node prisma/seed.cjs"
   },
   "dependencies": {
     "@nestjs/common": "^11.1.3",

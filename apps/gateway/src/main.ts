@@ -36,7 +36,20 @@ async function bootstrap() {
     app,
     new DocumentBuilder()
       .setTitle('VIPCAR API')
-      .setDescription('HTTP gateway for VIPCAR microservices')
+      .setDescription(
+        [
+          'HTTP gateway for VIPCAR microservices.',
+          '',
+          'Staff ops (`ops` tag, Bearer JWT, roles ops_agent|admin unless noted):',
+          '- Quotes inbox: `GET /v1/ops/quotes`, `PATCH /v1/ops/quotes/:id` (price), `POST /v1/ops/quotes/:id/confirm`',
+          '- Bookings: `POST /v1/ops/bookings/:id/confirm`',
+          '- Catalog/CMS: `GET /v1/ops/catalog/vehicles`, `GET|PUT /v1/ops/catalog/vehicles/:slug`, `GET /v1/ops/cms/articles`, `GET|PUT /v1/ops/cms/articles/:slug`',
+          '- Fleet: `GET /v1/ops/fleet/availability`',
+          '- Dispatch: `POST /v1/ops/dispatch/assign`, `POST /v1/ops/dispatch/trip/status` (driver allowed)',
+          '',
+          'Visual admin UI is Phase J (`/admin` routes in `apps/web`, same port); use this OpenAPI as the staff contract.',
+        ].join('\n'),
+      )
       .setVersion('1.0')
       .addBearerAuth()
       .build(),

@@ -31,7 +31,19 @@ Payloads live in `libs/contracts`. Include `eventId`, `occurredAt`, `correlation
 | `catalog.vehicles.list` | published models, optional category |
 | `catalog.vehicles.get` | by slug |
 | `catalog.locations.list` | pickup + commercial locations |
-| `catalog.admin.vehicle.upsert` | ops/admin |
+| `catalog.admin.vehicle.upsert` | ops/admin create/update (drafts ok) |
+
+### cms
+
+| Pattern | Purpose |
+|---|---|
+| `cms.articles.list` | published articles |
+| `cms.articles.get` | by slug |
+| `cms.faq.list` | published FAQ |
+| `cms.legal.get` | by slug |
+| `cms.admin.articles.list` | ops/admin list (drafts ok) |
+| `cms.admin.article.get` | ops/admin get by slug (drafts ok) |
+| `cms.admin.article.upsert` | ops/admin create/update (drafts ok) |
 
 ### booking (later)
 
@@ -41,37 +53,51 @@ Payloads live in `libs/contracts`. Include `eventId`, `occurredAt`, `correlation
 | `booking.quote.get` | by id (owner or staff) |
 | `booking.quote.list` | staff inbox |
 | `booking.quote.price` | ops sets confirmedPriceTnd |
-| `booking.confirm` | after payment or manual |
+| `booking.get` | by id (gateway enforces owner/staff) |
+| `booking.confirm` | after payment or manual (`awaiting_payment` → `confirmed`) |
+| `booking.status.update` | status machine transition (409 `ILLEGAL_TRANSITION` if invalid) |
 | `booking.cancel` | customer or staff |
 
-### fleet (later)
+### fleet
 
 | Pattern | Purpose |
 |---|---|
-| `fleet.availability.search` | model + hub + date range |
+| `fleet.availability.search` | model + hub + `[startAt, endAt)` → available units |
+| `fleet.hold.acquire` | short-TTL Redis checkout lock on a unit (409 if held) |
+| `fleet.hold.release` | free hold on confirm/cancel (TTL also expires it) |
 | `fleet.unit.assign` | bind unit to booking |
 | `fleet.calendar.block` | maintenance / hold |
 
-### dispatch (later)
+`fleet.availability.search` uses exclusive-end intervals: overlap iff `block.startAt < endAt AND block.endAt > startAt`. Units in `maintenance` or `inactive` are never returned. Active Redis checkout holds that overlap the requested range are also excluded.
+
+Checkout holds use Redis (`REDIS_URL`) with TTL 5–15 minutes (default 10 via `FLEET_HOLD_TTL_SECONDS`). Concurrent `fleet.hold.acquire` on the same unit returns 409. Release on booking confirm/cancel or when TTL elapses.
+
+### dispatch
 
 | Pattern | Purpose |
 |---|---|
-| `dispatch.driver.list` | by hub |
-| `dispatch.assign` | booking → driver |
-| `dispatch.trip.status` | en_route / arrived / completed |
+| `dispatch.health` | liveness |
+| `dispatch.driver.list` | by hub (G4+) |
+| `dispatch.assign` | booking → driver (G4) |
+| `dispatch.trip.status` | en_route / arrived / completed (G5) |
 
-### billing (later)
+### billing
 
 | Pattern | Purpose |
 |---|---|
-| `billing.checkout.create` | deposit or balance |
+| `billing.health` | liveness |
+| `billing.checkout.create` | deposit or balance (`manual` provider returns instructions) |
 | `billing.payment.get` | by booking |
-| `billing.invoice.create` | corporate |
+| `billing.webhook.handle` | PSP webhook (signature / provider API verify) |
+| `billing.invoice.create` | corporate (F7); requires CorporateBillingProfile (H4) |
+| `billing.corporateProfile.upsert` | create/update corporate invoicing profile (H4) |
+| `billing.corporateProfile.get` | load profile by corporateAccountId |
 
-### notify (later)
+### notify
 
 | Pattern | Purpose |
 |---|---|
+| `notify.health` | liveness |
 | `notify.send` | explicit send (rare; prefer events) |
 
 ---
@@ -89,7 +115,8 @@ Payloads live in `libs/contracts`. Include `eventId`, `occurredAt`, `correlation
 | `booking.completed` | booking | fleet (unit available), billing (deposit release) |
 | `fleet.unit.assigned` | fleet | booking, notify |
 | `dispatch.assigned` | dispatch | notify (customer + driver) |
-| `dispatch.trip.completed` | dispatch | booking |
+| `dispatch.trip.status.changed` | dispatch | notify (customer WhatsApp/email) |
+| `dispatch.trip.completed` | dispatch | booking (started/completed as needed) |
 | `billing.payment.captured` | billing | booking (`awaiting_payment` → `confirmed`) |
 | `billing.payment.failed` | billing | notify, booking |
 | `billing.deposit.released` | billing | notify |

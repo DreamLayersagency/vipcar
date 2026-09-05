@@ -3,31 +3,32 @@
 VIPCAR is an npm-workspace monorepo: a public Vite site plus NestJS microservices behind an HTTP gateway.
 
 ```text
-apps/web         Vite + React public site (SEO prerender)
+apps/web         Vite + React public site + staff /admin routes (Phase J)
 apps/gateway     HTTP API, JWT, rate limit, OpenAPI, NATS client
 apps/identity    Users, roles, sessions
-apps/catalog     Vehicle models, hubs, locations   (later)
-apps/cms         Articles, FAQ, legal              (later)
-apps/booking     Quotes and bookings               (later)
-apps/fleet       Physical units and calendar       (later)
-apps/dispatch    Drivers and trip assignments      (later)
-apps/billing     Payments, deposits, invoices      (later)
-apps/notify      WhatsApp + email                  (later)
+apps/catalog     Vehicle models, hubs, locations
+apps/cms         Articles, FAQ, legal
+apps/booking     Quotes and bookings
+apps/fleet       Physical units and calendar
+apps/dispatch    Drivers and trip assignments
+apps/billing     Payments, deposits, invoices
+apps/notify      WhatsApp + email (delivery log)
 libs/contracts   DTOs, events, NATS patterns, roles
 ```
 
-This pass ships **gateway + identity** as a runnable skeleton. Other apps are specified here and in [TASKS.md](../backend/TASKS.md).
+See [TASKS.md](../backend/TASKS.md). Phase **J** is path-based backoffice in `apps/web` (`/admin/*`, same port). Ops APIs: `/v1/ops/*`.
 
 ---
 
 ## Runtime
 
 ```text
-Browser  →  apps/web (static / Vite)
-Browser  →  apps/gateway  :3000  /v1
-gateway  →  NATS  →  identity (and later services)
-identity →  PostgreSQL schema "identity"
-gateway  →  Redis (rate-limit / cache)
+Browser  →  apps/web  :5173  /{en|fr}/...  (public)
+Staff    →  apps/web  :5173  /admin/...   (backoffice, same app/port)
+Both     →  apps/gateway  :3000  /v1
+gateway  →  NATS  →  identity, catalog, cms, booking, fleet, dispatch, billing, notify
+services →  PostgreSQL schemas (per service)
+gateway / notify →  Redis
 ```
 
 | Component | Local default |
@@ -37,7 +38,7 @@ gateway  →  Redis (rate-limit / cache)
 | NATS | `localhost:4222` (JetStream enabled) |
 | Gateway | `http://localhost:3000` |
 | Identity | NATS microservice + HTTP health `:3001` |
-| Web | `http://localhost:5173` |
+| Web + Admin | `http://localhost:5173` · public `/{lang}` · staff `/admin` (path routing in `apps/web`, **not** a second port) |
 
 Public marketing HTML stays on `vipcar.com.tn`. The API must **not** be mixed into that static host in a way that breaks prerender. Use a dedicated origin (e.g. `https://api.vipcar.com.tn`) or a reverse-proxy path that is already disallowed in `robots.txt` (`Disallow: /api/`). Gateway routes are versioned as `/v1`.
 
@@ -86,6 +87,8 @@ Roles: `customer`, `corporate_manager`, `driver`, `ops_agent`, `admin`.
 Indicative fleet prices remain display-only until a quote is confirmed.
 
 Keep EN/FR routes and prerender. Catalog/CMS APIs will feed the SPA later; do not break SEO URLs.
+
+**Staff backoffice:** Phase J lives as **client path routing** inside `apps/web` (`/admin/*` on the same Vite origin/port as the public site, e.g. `http://localhost:5173/admin`). It is **not** a second Vite app, not a second port, and does not need a separate CORS origin. Public SEO stays `/{en|fr}/...`; `/admin` is `noindex` and excluded from prerender/sitemap.
 
 ---
 

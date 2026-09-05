@@ -3,7 +3,7 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { RpcException } from '@nestjs/microservices';
-import type { User } from '@prisma/client';
+import type { User } from '../../generated/prisma';
 import type { AuthResultDto, LoginDto, PublicUserDto, RegisterDto } from '@vipcar/contracts';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma.service';
@@ -127,5 +127,6 @@ function toPublicUser(user: User): PublicUserDto {
     phone: user.phone,
     locale: user.locale,
     role: user.role,
+    corporateAccountId: user.corporateAccountId,
   };
 }

@@ -1,0 +1,1 @@
+export const DISPATCH_SERVICE = 'DISPATCH_SERVICE';

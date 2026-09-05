@@ -1,0 +1,10 @@
+# Local override: avoid host port clashes (Windows Postgres on 5432, other Redis on 6379).
+# Usage: docker compose -f docker-compose.yml -f docker-compose.local-ports.yml up -d postgres redis nats
+services:
+  postgres:
+    ports: !override
+      - "5435:5432"
+  redis:
+    ports: !reset []
+    expose:
+      - "6379"

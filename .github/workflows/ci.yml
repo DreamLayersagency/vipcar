@@ -1,0 +1,76 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      # Prisma generate reads DATABASE_URL but does not connect; no Docker in CI.
+      DATABASE_URL: postgresql://vipcar:vipcar@localhost:5432/vipcar?schema=identity
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build contracts
+        run: npm run build:contracts
+
+      - name: Generate identity Prisma client
+        run: npm run prisma:identity:generate
+
+      - name: Build identity
+        run: npm run build:identity
+
+      - name: Generate catalog Prisma client
+        env:
+          DATABASE_URL: postgresql://vipcar:vipcar@localhost:5432/vipcar?schema=catalog
+        run: npm run prisma:catalog:generate
+
+      - name: Build catalog
+        env:
+          DATABASE_URL: postgresql://vipcar:vipcar@localhost:5432/vipcar?schema=catalog
+        run: npm run build:catalog
+
+      - name: Generate booking Prisma client
+        env:
+          DATABASE_URL: postgresql://vipcar:vipcar@localhost:5432/vipcar?schema=booking
+        run: npm run prisma:booking:generate
+
+      - name: Build booking
+        env:
+          DATABASE_URL: postgresql://vipcar:vipcar@localhost:5432/vipcar?schema=booking
+        run: npm run build:booking
+
+      - name: Generate billing Prisma client
+        env:
+          DATABASE_URL: postgresql://vipcar:vipcar@localhost:5432/vipcar?schema=billing
+        run: npm run prisma:billing:generate
+
+      - name: Build billing
+        env:
+          DATABASE_URL: postgresql://vipcar:vipcar@localhost:5432/vipcar?schema=billing
+        run: npm run build:billing
+
+      - name: Generate dispatch Prisma client
+        env:
+          DATABASE_URL: postgresql://vipcar:vipcar@localhost:5432/vipcar?schema=dispatch
+        run: npm run prisma:dispatch:generate
+
+      - name: Build dispatch
+        env:
+          DATABASE_URL: postgresql://vipcar:vipcar@localhost:5432/vipcar?schema=dispatch
+        run: npm run build:dispatch
+
+      - name: Build gateway
+        run: npm run build:gateway

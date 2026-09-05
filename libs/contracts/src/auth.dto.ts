@@ -50,6 +50,7 @@ export class PublicUserDto {
   phone!: string | null;
   locale!: string;
   role!: Role;
+  corporateAccountId!: string | null;
 }
 
 export class TokenPairDto {
