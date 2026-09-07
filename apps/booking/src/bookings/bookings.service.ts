@@ -150,9 +150,15 @@ export class BookingsService {
 
     const search = dto.search?.trim();
     if (search) {
+      const referenceSearch = search.toLowerCase().startsWith('vc-')
+        ? search.slice(3).replace(/[^a-f0-9]/gi, '').slice(0, 8)
+        : '';
       and.push({
         OR: [
           { id: search },
+          ...(referenceSearch
+            ? [{ id: { startsWith: referenceSearch } }]
+            : []),
           { customerName: { contains: search } },
           { customerPhone: { contains: search } },
           { customerEmail: { contains: search } },

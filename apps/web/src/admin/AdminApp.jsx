@@ -213,9 +213,10 @@ function AdminShell({ page, title, user, locale, onLocale, onLogout, children })
         />
       ) : null}
       <aside className="admin-sidebar" id="admin-sidebar">
-        <p className="admin-brand">
-          VIPCAR <span>Ops</span>
-        </p>
+        <div className="admin-brand">
+          <img src="/images/vipcar-logo.png" alt="VIPCAR Tunisia" />
+          <span>Ops</span>
+        </div>
         <nav className="admin-nav" aria-label="Staff navigation">
           {NAV.map((item) => (
             <AdminLink
@@ -325,7 +326,10 @@ function LoginPage({ banner, locale, onLocale }) {
     <div className="admin-login">
       <div className="admin-login__panel">
         <div className="admin-login__head">
-          <p className="admin-login__brand">VIPCAR Ops</p>
+          <div className="admin-login__brand">
+            <img src="/images/vipcar-logo.png" alt="VIPCAR Tunisia" />
+            <span>Ops</span>
+          </div>
           <LocaleToggle locale={locale} onLocale={onLocale} />
         </div>
         <h1>{locale === 'fr' ? 'Connexion staff' : 'Staff sign in'}</h1>

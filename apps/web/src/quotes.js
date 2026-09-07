@@ -1,18 +1,31 @@
-import { api, ApiError } from './api.js';
+import { ApiError } from './api.js';
+import { apiWithAuth } from './auth.js';
 
 /**
  * Persist a public quote via the gateway.
  * @param {Record<string, unknown>} body CreateQuoteHttpDto fields
- * @param {{ locale?: 'en' | 'fr', signal?: AbortSignal }} [options]
+ * @param {{ locale?: 'en' | 'fr', signal?: AbortSignal, token?: string | null }} [options]
  * @returns {Promise<{ data: unknown }>}
  */
 export async function createQuote(body, options = {}) {
-  return api('/v1/quotes', {
+  return apiWithAuth('/v1/quotes', {
     method: 'POST',
     body,
+    token: options.token,
     locale: options.locale,
     signal: options.signal,
   });
+}
+
+/**
+ * Short, safe reference shown to customers after a request is saved.
+ * The full quote UUID remains the correlation key in the API and backoffice.
+ * @param {unknown} id
+ */
+export function formatQuoteReference(id) {
+  if (typeof id !== 'string' || !id.trim()) return '—';
+  const compactId = id.replace(/-/g, '').slice(0, 8).toUpperCase();
+  return `VC-${compactId}`;
 }
 
 /**

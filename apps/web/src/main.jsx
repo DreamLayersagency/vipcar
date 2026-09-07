@@ -14,6 +14,7 @@ import { initAnalytics, trackEvent } from './analytics';
 import {
   buildWhatsAppQuoteMessage,
   createQuote,
+  formatQuoteReference,
   openWhatsAppQuote,
   quoteErrorMessage,
 } from './quotes';
@@ -42,6 +43,7 @@ const ORIGIN = 'https://vipcar.com.tn';
 const PHONE = '+216 55 771 077';
 const WA = 'https://wa.me/21655771077';
 const ASSET = `${ORIGIN}/images`;
+const LOGO = '/images/vipcar-logo.png';
 const CURRENCY = 'TND';
 
 const copy = {
@@ -121,7 +123,7 @@ function Header({lang}) {
   return <>
     <div className="utility"><span><Clock3 size={13}/> 24/7 · Tunis · Gabès · Djerba</span><a href="tel:+21655771077" onClick={()=>trackEvent('phone_click',{location:'utility',language:lang})}>{PHONE}</a></div>
     <header className="header">
-      <SmartLink href={link(lang)} className="logo" aria-label="VIPCAR home"><span>VIP</span>CAR<small>TUNISIA</small></SmartLink>
+      <SmartLink href={link(lang)} className="brand-logo brand-logo--header" aria-label="VIPCAR Tunisia home"><img src={LOGO} alt="VIPCAR Tunisia" /></SmartLink>
       <nav id="primary-navigation" className={open?'nav open':'nav'} aria-label="Primary navigation">{t.nav.map((n,i)=>{const path=navPaths[i]; const active=currentPath===path||currentPath.startsWith(`${path}/`); return <SmartLink key={n} href={link(lang,path)} aria-current={active?'page':undefined} onClick={()=>setOpen(false)}>{n}</SmartLink>})}</nav>
       <div className="header-actions">
         <div className="language-picker"><button type="button" className="language-trigger" aria-haspopup="listbox" aria-expanded={languageOpen} aria-label={lang==='en'?'Select language':'Choisir la langue'} onMouseDown={event=>event.stopPropagation()} onClick={()=>setLanguageOpen(previous=>!previous)}><Languages size={16}/><span>{lang.toUpperCase()}</span><ChevronDown size={13}/></button>{languageOpen&&<div className="language-menu" role="listbox" aria-label={lang==='en'?'Languages':'Langues'} onMouseDown={event=>event.stopPropagation()}><button type="button" role="option" aria-selected={lang==='en'} className={lang==='en'?'active':''} onClick={()=>switchLanguage('en')}><span>EN</span><small>English</small></button><button type="button" role="option" aria-selected={lang==='fr'} className={lang==='fr'?'active':''} onClick={()=>switchLanguage('fr')}><span>FR</span><small>Français</small></button></div>}</div>
@@ -134,9 +136,26 @@ function Header({lang}) {
 }
 
 function Footer({lang}) { const t=copy[lang]; return <footer>
-  <div className="footer-top"><div><div className="logo logo-light"><span>VIP</span>CAR<small>TUNISIA</small></div><p>{t.footer}</p></div><div><strong>Services</strong><SmartLink href={link(lang,'/services/rental')}>{t.nav[0]}</SmartLink><SmartLink href={link(lang,'/services/transfer')}>{t.nav[1]}</SmartLink><SmartLink href={link(lang,'/services/chauffeur')}>{t.nav[2]}</SmartLink></div><div><strong>Explore</strong><SmartLink href={link(lang,'/fleet')}>{t.nav[3]}</SmartLink><SmartLink href={link(lang,'/corporate')}>{t.nav[4]}</SmartLink><SmartLink href={link(lang,'/my-bookings')}>{lang==='en'?'My bookings':'Mes réservations'}</SmartLink><SmartLink href={link(lang,'/blog')}>Travel journal</SmartLink><SmartLink href={link(lang,'/about')}>{t.nav[6]}</SmartLink></div><div><strong>Contact</strong><a href="tel:+21655771077" onClick={()=>trackEvent('phone_click',{location:'footer',language:lang})}>{PHONE}</a><a href={WA} onClick={()=>trackEvent('whatsapp_click',{location:'footer',language:lang})}>WhatsApp</a><a href="mailto:info@vipcar.com.tn" onClick={()=>trackEvent('email_click',{location:'footer',language:lang})}>info@vipcar.com.tn</a><span>Rue de la Feuille d'Érable<br/>Lac 2, Tunis</span></div></div>
+  <div className="footer-top"><div><SmartLink href={link(lang)} className="brand-logo brand-logo--footer" aria-label="VIPCAR Tunisia home"><img src={LOGO} alt="VIPCAR Tunisia" /></SmartLink><p>{t.footer}</p></div><div><strong>Services</strong><SmartLink href={link(lang,'/services/rental')}>{t.nav[0]}</SmartLink><SmartLink href={link(lang,'/services/transfer')}>{t.nav[1]}</SmartLink><SmartLink href={link(lang,'/services/chauffeur')}>{t.nav[2]}</SmartLink></div><div><strong>Explore</strong><SmartLink href={link(lang,'/fleet')}>{t.nav[3]}</SmartLink><SmartLink href={link(lang,'/corporate')}>{t.nav[4]}</SmartLink><SmartLink href={link(lang,'/my-bookings')}>{lang==='en'?'My bookings':'Mes réservations'}</SmartLink><SmartLink href={link(lang,'/blog')}>Travel journal</SmartLink><SmartLink href={link(lang,'/about')}>{t.nav[6]}</SmartLink></div><div><strong>Contact</strong><a href="tel:+21655771077" onClick={()=>trackEvent('phone_click',{location:'footer',language:lang})}>{PHONE}</a><a href={WA} onClick={()=>trackEvent('whatsapp_click',{location:'footer',language:lang})}>WhatsApp</a><a href="mailto:info@vipcar.com.tn" onClick={()=>trackEvent('email_click',{location:'footer',language:lang})}>info@vipcar.com.tn</a><span>Rue de la Feuille d'Érable<br/>Lac 2, Tunis</span></div></div>
   <div className="footer-bottom"><span>© 2026 VIPCAR Tunisia</span><div><SmartLink href={link(lang,'/legal/terms-conditions')}>Terms</SmartLink><SmartLink href={link(lang,'/legal/privacy-policy')}>Privacy</SmartLink><SmartLink href={link(lang,'/legal/cancellation-policy')}>Cancellation</SmartLink></div></div>
   </footer> }
+
+function QuoteSuccess({lang,request,compact=false,onWhatsApp,onReset}) {
+  const isEnglish=lang==='en';
+  const accountUser=getStoredUser();
+  return <section className={`quote-success${compact?' quote-success--compact':''}`} aria-live="polite">
+    <div className="quote-success-mark" aria-hidden="true"><Check size={19}/></div>
+    <p className="overline">{isEnglish?'Request received':'Demande reçue'}</p>
+    <h3>{isEnglish?'Your trip request is safely with the VIPCAR team.':'Votre demande de trajet est bien enregistrée par l’équipe VIPCAR.'}</h3>
+    <p className="quote-success-copy">{isEnglish?'We will confirm availability and your fixed quote directly. Keep this reference for any follow-up.':'Nous allons confirmer la disponibilité et votre devis fixe directement. Conservez cette référence pour tout suivi.'}</p>
+    <div className="quote-success-reference"><span>{isEnglish?'Request reference':'Référence de la demande'}</span><strong>{request.reference}</strong></div>
+    {accountUser?.role==='customer'&&<p className="quote-success-account">{isEnglish?'This request is linked to your VIPCAR account and will appear in My bookings once confirmed.':'Cette demande est liée à votre compte VIPCAR et apparaîtra dans Mes réservations une fois confirmée.'}</p>}
+    <div className="quote-success-actions">
+      <button type="button" className="button" onClick={onWhatsApp}>{isEnglish?'Continue on WhatsApp':'Continuer sur WhatsApp'}<MessageCircle size={17}/></button>
+      <button type="button" className="quote-success-reset" onClick={onReset}>{isEnglish?'Make another request':'Faire une autre demande'}</button>
+    </div>
+  </section>
+}
 
 function QuoteWidget({lang,compact=false}) {
   const [service,setService]=useState('rental');
@@ -144,6 +163,7 @@ function QuoteWidget({lang,compact=false}) {
   const [duration,setDuration]=useState('full-day');
   const [error,setError]=useState('');
   const [submitting,setSubmitting]=useState(false);
+  const [success,setSuccess]=useState(null);
   useEffect(()=>{initAnalytics()},[]);
   const today=new Date().toISOString().slice(0,10);
   const action=lang==='en'?'Get my fixed quote':'Recevoir mon devis fixe';
@@ -196,9 +216,10 @@ function QuoteWidget({lang,compact=false}) {
     };
     setSubmitting(true);
     try{
-      await createQuote(body,{locale:lang});
-      trackEvent('quote_submit',{service,language:lang,location:compact?'compact_quote':'quote'});
-      openWhatsAppQuote(buildWhatsAppQuoteMessage({
+      const response=await createQuote(body,{locale:lang});
+      const quote=response?.data;
+      const reference=formatQuoteReference(quote?.id);
+      const whatsappText=`${buildWhatsAppQuoteMessage({
         service,
         pickup,
         startDate,
@@ -208,13 +229,19 @@ function QuoteWidget({lang,compact=false}) {
         notes,
         duration:durationValue,
         passengers,
-      }),WA);
+      })} Reference: ${reference}.`;
+      setSuccess({
+        reference,
+        whatsappText,
+      });
+      trackEvent('quote_submit',{service,language:lang,location:compact?'compact_quote':'quote'});
     }catch(err){
       setError(quoteErrorMessage(err,lang));
     }finally{
       setSubmitting(false);
     }
   };
+  if(success)return <QuoteSuccess lang={lang} request={success} compact={compact} onWhatsApp={()=>openWhatsAppQuote(success.whatsappText,WA)} onReset={()=>{setSuccess(null);setError('')}}/>;
   return <form className={compact?'quote compact':'quote'} onSubmit={submit}>
     <div className="quote-heading"><div><p className="overline">{lang==='en'?'Start with your trip':'Commencez par votre trajet'}</p><h3>{lang==='en'?'What are you arranging?':'Quel trajet organisez-vous ?'}</h3></div><span><ShieldCheck size={15}/>{lang==='en'?'No payment now':'Aucun paiement immédiat'}</span></div>
     <div className="quote-service-choice" role="group" aria-label={lang==='en'?'Choose a service':'Choisir un service'}>{services.map(s=>{const Icon=s.icon;return <button type="button" className={service===s.key?'active':''} aria-pressed={service===s.key} onClick={()=>chooseService(s.key)} key={s.key}><Icon size={20}/><span><strong>{s.title[lang==='en'?0:1]}</strong><small>{s.key==='rental'?(lang==='en'?'Self-drive':'Sans chauffeur'):s.key==='transfer'?(lang==='en'?'Airport pickup':'Aéroport'):lang==='en'?'By the hour or day':'À l’heure ou à la journée'}</small></span></button>})}</div>
@@ -516,6 +543,7 @@ function BookingPage({lang}) {
   const [step,setStep]=useState(1), [service,setService]=useState('rental'), [data,setData]=useState({});
   const [error,setError]=useState('');
   const [submitting,setSubmitting]=useState(false);
+  const [success,setSuccess]=useState(null);
   const t=copy[lang];
   const vehicleSlug=new URLSearchParams(location.search).get('vehicle');
   const vehicle=fleet.find(x=>x.slug===vehicleSlug);
@@ -564,9 +592,10 @@ function BookingPage({lang}) {
     };
     setSubmitting(true);
     try{
-      await createQuote(body,{locale:lang});
-      trackEvent('quote_submit',{service,language:lang,location:'booking'});
-      openWhatsAppQuote(buildWhatsAppQuoteMessage({
+      const response=await createQuote(body,{locale:lang});
+      const quote=response?.data;
+      const reference=formatQuoteReference(quote?.id);
+      const whatsappText=`${buildWhatsAppQuoteMessage({
         service,
         pickup,
         dropoff,
@@ -578,14 +607,19 @@ function BookingPage({lang}) {
         notes,
         duration,
         vehicleName:vehicle?.name,
-      }),WA);
+      })} Reference: ${reference}.`;
+      setSuccess({
+        reference,
+        whatsappText,
+      });
+      trackEvent('quote_submit',{service,language:lang,location:'booking'});
     }catch(err){
       setError(quoteErrorMessage(err,lang));
     }finally{
       setSubmitting(false);
     }
   };
-  return <main className="booking-page"><div className="booking-intro"><p className="overline">VIPCAR quote request</p><h1>{lang==='en'?'Your journey, arranged in a few steps.':'Votre trajet, organisé en quelques étapes.'}</h1><p>{t.quoteSub}</p>{vehicle&&<p className="booking-selection">Selected vehicle: <strong>{vehicle.name}</strong></p>}<div className="booking-contact"><Clock3/><span>24/7</span><MessageCircle/><span>{PHONE}</span></div></div><form className="booking-panel" onSubmit={finish}><div className="steps"><span className={step>=1?'active':''}>1 <b>{lang==='en'?'Service':'Service'}</b></span><i/><span className={step>=2?'active':''}>2 <b>{lang==='en'?'Trip':'Trajet'}</b></span><i/><span className={step>=3?'active':''}>3 <b>{lang==='en'?'Contact':'Contact'}</b></span></div>{step===1&&<div className="booking-step"><h2>{lang==='en'?'What do you need?':'De quel service avez-vous besoin ?'}</h2><div className="booking-services">{services.map(s=>{const Icon=s.icon;return <button type="button" key={s.key} className={service===s.key?'active':''} onClick={()=>chooseService(s.key)}><Icon/><strong>{s.title[lang==='en'?0:1]}</strong><span>{s.text[lang==='en'?0:1]}</span><Check/></button>})}</div><button type="button" className="button next" onClick={()=>setStep(2)}>{lang==='en'?'Continue':'Continuer'}<ArrowRight/></button></div>}{step===2&&<div className="booking-step"><h2>{lang==='en'?'Tell us about the trip':'Parlez-nous du trajet'}</h2><div className="form-grid"><label>Pick-up location<select required name="pickup" value={data.pickup||''} onChange={update}><option value="">Select</option>{locations.map(x=><option key={x}>{x}</option>)}</select></label><label>Return location<select name="return" value={data.return||''} onChange={update}><option value="">Select</option>{locations.map(x=><option key={x}>{x}</option>)}</select></label><label>Pick-up date<input required min={today} type="date" name="date" value={data.date||''} onChange={update}/></label><label>Return date<input required={service==='rental'} min={data.date||today} type="date" name="returnDate" value={data.returnDate||''} onChange={update}/></label>{service==='chauffeur'&&<label>Service duration<select name="duration" value={data.duration||'full-day'} onChange={update}><option value="hourly">{lang==='en'?'By the hour':'À l’heure'}</option><option value="half-day">{lang==='en'?'Half day':'Demi-journée'}</option><option value="full-day">{lang==='en'?'Full day':'Journée complète'}</option></select></label>}<label className="full">Notes<textarea name="notes" value={data.notes||''} onChange={update} placeholder="Flight number, passengers, hotel or other useful details"/></label></div><div className="step-actions"><button type="button" onClick={()=>setStep(1)}>Back</button><button type="button" className="button" onClick={()=>setStep(3)}>Continue<ArrowRight/></button></div></div>}{step===3&&<div className="booking-step"><h2>{lang==='en'?'Where should we confirm your quote?':'Où devons-nous confirmer votre devis ?'}</h2><div className="form-grid"><label>Full name<input required name="name" value={data.name||''} onChange={update} autoComplete="name"/></label><label>Phone / WhatsApp<input required name="contact" type="tel" value={data.contact||''} onChange={update} autoComplete="tel"/></label><label className="full">Email<input name="email" type="email" value={data.email||''} onChange={update} autoComplete="email"/></label></div><div className="booking-summary"><strong>{lang==='en'?'Review your request':'Vérifiez votre demande'}</strong><span>{services.find(s=>s.key===service)?.title[lang==='en'?0:1]}{vehicle?` · ${vehicle.name}`:''}</span><span>{data.pickup||'—'} → {data.return||data.pickup||'—'}</span><span>{data.date||'—'} → {data.returnDate||'—'}</span></div><div className="confirm-note"><ShieldCheck/><p><strong>{lang==='en'?'No immediate payment':'Aucun paiement immédiat'}</strong><br/>{lang==='en'?'We save your request first, then open WhatsApp so the VIPCAR team can confirm with you.':'Nous enregistrons d’abord votre demande, puis ouvrons WhatsApp pour confirmation avec l’équipe VIPCAR.'}</p></div>{error&&<p className="form-feedback form-feedback-error" role="alert">{error}</p>}<div className="step-actions"><button type="button" onClick={()=>setStep(2)}>Back</button><button className="button" type="submit" disabled={submitting}>{submitting?(lang==='en'?'Sending…':'Envoi…'):t.book}{!submitting&&<MessageCircle/>}</button></div></div>}</form></main>
+  return <main className="booking-page"><div className="booking-intro"><p className="overline">VIPCAR quote request</p><h1>{lang==='en'?'Your journey, arranged in a few steps.':'Votre trajet, organisé en quelques étapes.'}</h1><p>{t.quoteSub}</p>{vehicle&&<p className="booking-selection">Selected vehicle: <strong>{vehicle.name}</strong></p>}<div className="booking-contact"><Clock3/><span>24/7</span><MessageCircle/><span>{PHONE}</span></div></div><form className="booking-panel" onSubmit={finish}>{success?<QuoteSuccess lang={lang} request={success} onWhatsApp={()=>openWhatsAppQuote(success.whatsappText,WA)} onReset={()=>{setSuccess(null);setError('');setStep(1);setData({})}}/>:<><div className="steps"><span className={step>=1?'active':''}>1 <b>{lang==='en'?'Service':'Service'}</b></span><i/><span className={step>=2?'active':''}>2 <b>{lang==='en'?'Trip':'Trajet'}</b></span><i/><span className={step>=3?'active':''}>3 <b>{lang==='en'?'Contact':'Contact'}</b></span></div>{step===1&&<div className="booking-step"><h2>{lang==='en'?'What do you need?':'De quel service avez-vous besoin ?'}</h2><div className="booking-services">{services.map(s=>{const Icon=s.icon;return <button type="button" key={s.key} className={service===s.key?'active':''} onClick={()=>chooseService(s.key)}><Icon/><strong>{s.title[lang==='en'?0:1]}</strong><span>{s.text[lang==='en'?0:1]}</span><Check/></button>})}</div><button type="button" className="button next" onClick={()=>setStep(2)}>{lang==='en'?'Continue':'Continuer'}<ArrowRight/></button></div>}{step===2&&<div className="booking-step"><h2>{lang==='en'?'Tell us about the trip':'Parlez-nous du trajet'}</h2><div className="form-grid"><label>Pick-up location<select required name="pickup" value={data.pickup||''} onChange={update}><option value="">Select</option>{locations.map(x=><option key={x}>{x}</option>)}</select></label><label>Return location<select name="return" value={data.return||''} onChange={update}><option value="">Select</option>{locations.map(x=><option key={x}>{x}</option>)}</select></label><label>Pick-up date<input required min={today} type="date" name="date" value={data.date||''} onChange={update}/></label><label>Return date<input required={service==='rental'} min={data.date||today} type="date" name="returnDate" value={data.returnDate||''} onChange={update}/></label>{service==='chauffeur'&&<label>Service duration<select name="duration" value={data.duration||'full-day'} onChange={update}><option value="hourly">{lang==='en'?'By the hour':'À l’heure'}</option><option value="half-day">{lang==='en'?'Half day':'Demi-journée'}</option><option value="full-day">{lang==='en'?'Full day':'Journée complète'}</option></select></label>}<label className="full">Notes<textarea name="notes" value={data.notes||''} onChange={update} placeholder="Flight number, passengers, hotel or other useful details"/></label></div><div className="step-actions"><button type="button" onClick={()=>setStep(1)}>Back</button><button type="button" className="button" onClick={()=>setStep(3)}>Continue<ArrowRight/></button></div></div>}{step===3&&<div className="booking-step"><h2>{lang==='en'?'Where should we confirm your quote?':'Où devons-nous confirmer votre devis ?'}</h2><div className="form-grid"><label>Full name<input required name="name" value={data.name||''} onChange={update} autoComplete="name"/></label><label>Phone / WhatsApp<input required name="contact" type="tel" value={data.contact||''} onChange={update} autoComplete="tel"/></label><label className="full">Email<input name="email" type="email" value={data.email||''} onChange={update} autoComplete="email"/></label></div><div className="booking-summary"><strong>{lang==='en'?'Review your request':'Vérifiez votre demande'}</strong><span>{services.find(s=>s.key===service)?.title[lang==='en'?0:1]}{vehicle?` · ${vehicle.name}`:''}</span><span>{data.pickup||'—'} → {data.return||data.pickup||'—'}</span><span>{data.date||'—'} → {data.returnDate||'—'}</span></div><div className="confirm-note"><ShieldCheck/><p><strong>{lang==='en'?'No immediate payment':'Aucun paiement immédiat'}</strong><br/>{lang==='en'?'We save your request first, then open WhatsApp so the VIPCAR team can confirm with you.':'Nous enregistrons d’abord votre demande, puis ouvrons WhatsApp pour confirmation avec l’équipe VIPCAR.'}</p></div>{error&&<p className="form-feedback form-feedback-error" role="alert">{error}</p>}<div className="step-actions"><button type="button" onClick={()=>setStep(2)}>Back</button><button className="button" type="submit" disabled={submitting}>{submitting?(lang==='en'?'Sending…':'Envoi…'):t.book}{!submitting&&<MessageCircle/>}</button></div></div>}</>}</form></main>
 }
 
 function Corporate({lang}) { return <main className="page"><PageHero image="interior.jpg" eyebrow="VIPCAR for business" title={lang==='en'?'Ground mobility your team can rely on.':'La mobilité professionnelle sur laquelle compter.'} text={lang==='en'?'Airport transfers, chauffeur services and vehicle rental for companies, hotels, travel agencies and events.':'Transferts, chauffeurs et location pour entreprises, hôtels, agences de voyage et événements.'}/><section className="section corporate-grid"><div><p className="overline">Corporate mobility</p><h2>{lang==='en'?'One point of contact across Tunisia.':'Un seul contact partout en Tunisie.'}</h2><p>{lang==='en'?'VIPCAR already works with concierge services, travel agencies and corporate accounts. Share passenger schedules, vehicle needs and invoicing requirements with a team available around the clock.':'VIPCAR travaille avec des conciergeries, agences de voyage et comptes entreprises. Confiez les horaires, véhicules et besoins de facturation à une équipe disponible 24h/24.'}</p></div><div className="benefit-grid">{[['briefcase','Corporate accounts'],['plane','Airport coordination'],['users','Professional drivers'],['clock','24/7 support']].map(([i,x])=><div key={x}><BriefcaseBusiness/><strong>{x}</strong><span>{lang==='en'?'Arranged around your operation':'Adapté à votre activité'}</span></div>)}</div></section><Cta lang={lang}/></main> }
