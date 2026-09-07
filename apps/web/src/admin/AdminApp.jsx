@@ -214,7 +214,7 @@ function AdminShell({ page, title, user, locale, onLocale, onLogout, children })
       ) : null}
       <aside className="admin-sidebar" id="admin-sidebar">
         <div className="admin-brand">
-          <img src="/images/vipcar-logo.png" alt="VIPCAR Tunisia" />
+          <img src="/images/vipcar-logo.svg" alt="VIPCAR Tunisia" />
           <span>Ops</span>
         </div>
         <nav className="admin-nav" aria-label="Staff navigation">
@@ -327,7 +327,7 @@ function LoginPage({ banner, locale, onLocale }) {
       <div className="admin-login__panel">
         <div className="admin-login__head">
           <div className="admin-login__brand">
-            <img src="/images/vipcar-logo.png" alt="VIPCAR Tunisia" />
+            <img src="/images/vipcar-logo.svg" alt="VIPCAR Tunisia" />
             <span>Ops</span>
           </div>
           <LocaleToggle locale={locale} onLocale={onLocale} />

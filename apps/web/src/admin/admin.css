@@ -1995,7 +1995,7 @@
 
 .admin-brand img {
   display: block;
-  width: 8.5rem;
+  width: 11rem;
   height: auto;
   padding: 0.55rem 0.65rem;
   border-radius: 0.35rem;
@@ -2027,7 +2027,7 @@
 
 .admin-login__brand img {
   display: block;
-  width: 8.8rem;
+  width: 11rem;
   height: auto;
 }
 
@@ -2044,10 +2044,10 @@
 
 @media (max-width: 760px) {
   .admin-brand img {
-    width: 7.5rem;
+    width: 9.5rem;
   }
 
   .admin-login__brand img {
-    width: 7.6rem;
+    width: 9.5rem;
   }
 }

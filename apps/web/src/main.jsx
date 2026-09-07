@@ -43,7 +43,8 @@ const ORIGIN = 'https://vipcar.com.tn';
 const PHONE = '+216 55 771 077';
 const WA = 'https://wa.me/21655771077';
 const ASSET = `${ORIGIN}/images`;
-const LOGO = '/images/vipcar-logo.png';
+const LOGO = '/images/vipcar-logo.svg';
+const LOGO_LIGHT = '/images/vipcar-logo-light.svg';
 const CURRENCY = 'TND';
 
 const copy = {
@@ -136,7 +137,7 @@ function Header({lang}) {
 }
 
 function Footer({lang}) { const t=copy[lang]; return <footer>
-  <div className="footer-top"><div><SmartLink href={link(lang)} className="brand-logo brand-logo--footer" aria-label="VIPCAR Tunisia home"><img src={LOGO} alt="VIPCAR Tunisia" /></SmartLink><p>{t.footer}</p></div><div><strong>Services</strong><SmartLink href={link(lang,'/services/rental')}>{t.nav[0]}</SmartLink><SmartLink href={link(lang,'/services/transfer')}>{t.nav[1]}</SmartLink><SmartLink href={link(lang,'/services/chauffeur')}>{t.nav[2]}</SmartLink></div><div><strong>Explore</strong><SmartLink href={link(lang,'/fleet')}>{t.nav[3]}</SmartLink><SmartLink href={link(lang,'/corporate')}>{t.nav[4]}</SmartLink><SmartLink href={link(lang,'/my-bookings')}>{lang==='en'?'My bookings':'Mes réservations'}</SmartLink><SmartLink href={link(lang,'/blog')}>Travel journal</SmartLink><SmartLink href={link(lang,'/about')}>{t.nav[6]}</SmartLink></div><div><strong>Contact</strong><a href="tel:+21655771077" onClick={()=>trackEvent('phone_click',{location:'footer',language:lang})}>{PHONE}</a><a href={WA} onClick={()=>trackEvent('whatsapp_click',{location:'footer',language:lang})}>WhatsApp</a><a href="mailto:info@vipcar.com.tn" onClick={()=>trackEvent('email_click',{location:'footer',language:lang})}>info@vipcar.com.tn</a><span>Rue de la Feuille d'Érable<br/>Lac 2, Tunis</span></div></div>
+  <div className="footer-top"><div><SmartLink href={link(lang)} className="brand-logo brand-logo--footer" aria-label="VIPCAR Tunisia home"><img src={LOGO_LIGHT} alt="VIPCAR Tunisia" /></SmartLink><p>{t.footer}</p></div><div><strong>Services</strong><SmartLink href={link(lang,'/services/rental')}>{t.nav[0]}</SmartLink><SmartLink href={link(lang,'/services/transfer')}>{t.nav[1]}</SmartLink><SmartLink href={link(lang,'/services/chauffeur')}>{t.nav[2]}</SmartLink></div><div><strong>Explore</strong><SmartLink href={link(lang,'/fleet')}>{t.nav[3]}</SmartLink><SmartLink href={link(lang,'/corporate')}>{t.nav[4]}</SmartLink><SmartLink href={link(lang,'/my-bookings')}>{lang==='en'?'My bookings':'Mes réservations'}</SmartLink><SmartLink href={link(lang,'/blog')}>Travel journal</SmartLink><SmartLink href={link(lang,'/about')}>{t.nav[6]}</SmartLink></div><div><strong>Contact</strong><a href="tel:+21655771077" onClick={()=>trackEvent('phone_click',{location:'footer',language:lang})}>{PHONE}</a><a href={WA} onClick={()=>trackEvent('whatsapp_click',{location:'footer',language:lang})}>WhatsApp</a><a href="mailto:info@vipcar.com.tn" onClick={()=>trackEvent('email_click',{location:'footer',language:lang})}>info@vipcar.com.tn</a><span>Rue de la Feuille d'Érable<br/>Lac 2, Tunis</span></div></div>
   <div className="footer-bottom"><span>© 2026 VIPCAR Tunisia</span><div><SmartLink href={link(lang,'/legal/terms-conditions')}>Terms</SmartLink><SmartLink href={link(lang,'/legal/privacy-policy')}>Privacy</SmartLink><SmartLink href={link(lang,'/legal/cancellation-policy')}>Cancellation</SmartLink></div></div>
   </footer> }
 
