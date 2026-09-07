@@ -8,8 +8,13 @@ import {
   ConfirmBookingDto,
   DOMAIN_EVENTS,
   GetBookingDto,
+  type AssignReservationUnitDto,
+  type GetReservationDto,
+  type ListReservationsDto,
   ListMyBookingsDto,
   NATS_PATTERNS,
+  type ReservationDto,
+  type ReservationStatusLabel,
   STAFF_ROLES,
   UpdateBookingStatusDto,
   type BookingStatusLabel,
@@ -23,9 +28,16 @@ import {
 import { randomUUID } from 'crypto';
 import { catchError, defaultIfEmpty, firstValueFrom, throwError, timeout } from 'rxjs';
 import { Prisma } from '../../generated/prisma';
-import type { Booking, BookingStatus, ChauffeurDuration } from '../../generated/prisma';
+import type {
+  Booking,
+  BookingStatus,
+  ChauffeurDuration,
+  Quote,
+  QuoteStatus,
+} from '../../generated/prisma';
 import { BOOKING_NATS } from '../booking.constants';
 import { PrismaService } from '../prisma.service';
+import { toQuoteDto } from '../quotes/quotes.service';
 import { assertServiceTypePayload } from '../service-type.payload';
 import { canTransition } from './booking-status.machine';
 import {
@@ -53,6 +65,16 @@ const STUB_CANCELLATION_POLICY: Record<string, unknown> = {
     'Les conditions d’annulation et de modification dépendent du service, du véhicule et du délai de la demande et sont confirmées avant la réservation.',
   timingRules: STUB_CANCELLATION_TIMING,
 };
+
+type QuoteWithBooking = Prisma.QuoteGetPayload<{
+  include: { booking: true };
+}>;
+
+const PRE_CONFIRM_BOOKING_STATUSES = new Set<BookingStatus>([
+  'quote_requested',
+  'quoted',
+  'awaiting_payment',
+]);
 
 @Injectable()
 export class BookingsService {
@@ -94,6 +116,144 @@ export class BookingsService {
       data: bookings.map(toBookingDto),
       meta: { page, limit, total },
     };
+  }
+
+  /**
+   * NATS `booking.ops.reservations.list` — unified staff inbox.
+   * The originating quote id is the canonical reservation reference, while a
+   * linked booking is included when the request has entered the booking flow.
+   */
+  async listOpsReservations(
+    dto: ListReservationsDto = {},
+  ): Promise<{ data: ReservationDto[]; meta: PaginationMetaDto }> {
+    const page = dto.page ?? 1;
+    const limit = dto.limit ?? 20;
+    const and: Prisma.QuoteWhereInput[] = [];
+
+    if (dto.service) and.push({ service: dto.service });
+    if (dto.channel) and.push({ channel: dto.channel });
+
+    if (dto.from || dto.to) {
+      const startAt: Prisma.DateTimeFilter = {};
+      if (dto.from) startAt.gte = parseReservationDate(dto.from, 'from');
+      if (dto.to) startAt.lt = parseReservationDate(dto.to, 'to');
+      if (startAt.gte && startAt.lt && startAt.gte >= startAt.lt) {
+        throw new RpcException({
+          code: 'VALIDATION_ERROR',
+          message: 'from must be before to',
+          status: 400,
+          details: [{ field: 'from' }, { field: 'to' }],
+        });
+      }
+      and.push({ startAt });
+    }
+
+    const search = dto.search?.trim();
+    if (search) {
+      and.push({
+        OR: [
+          { id: search },
+          { customerName: { contains: search } },
+          { customerPhone: { contains: search } },
+          { customerEmail: { contains: search } },
+          { pickupLabel: { contains: search } },
+          { dropoffLabel: { contains: search } },
+          { flightNumber: { contains: search } },
+        ],
+      });
+    }
+
+    if (dto.status) and.push(reservationStatusWhere(dto.status));
+
+    const where: Prisma.QuoteWhereInput = and.length ? { AND: and } : {};
+    const [quotes, total] = await this.prisma.$transaction([
+      this.prisma.quote.findMany({
+        where,
+        include: { booking: true },
+        orderBy: { createdAt: 'desc' },
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      this.prisma.quote.count({ where }),
+    ]);
+
+    return {
+      data: quotes.map(toReservationDto),
+      meta: { page, limit, total },
+    };
+  }
+
+  /** NATS `booking.ops.reservation.get` — resolve by quote id or booking id. */
+  async getOpsReservation(
+    dto: GetReservationDto,
+  ): Promise<{ data: ReservationDto }> {
+    let quote = await this.prisma.quote.findFirst({
+      where: { id: dto.reservationId },
+      include: { booking: true },
+    });
+
+    if (!quote) {
+      quote = await this.prisma.quote.findFirst({
+        where: { booking: { is: { id: dto.reservationId } } },
+        include: { booking: true },
+      });
+    }
+
+    if (!quote) {
+      throw new RpcException({
+        code: 'RESERVATION_NOT_FOUND',
+        message: 'Reservation not found',
+        status: 404,
+      });
+    }
+
+    return { data: toReservationDto(quote) };
+  }
+
+  /**
+   * Assign a fleet unit to an existing booking before confirmation. Calendar
+   * blocking stays inside the existing confirm saga, so this action is safe
+   * to use while staff is preparing a quote.
+   */
+  async assignReservationUnit(
+    dto: AssignReservationUnitDto,
+  ): Promise<{ data: ReservationDto }> {
+    const quote = await this.prisma.quote.findUnique({
+      where: { id: dto.quoteId },
+      include: { booking: true },
+    });
+
+    if (!quote) {
+      throw new RpcException({
+        code: 'RESERVATION_NOT_FOUND',
+        message: 'Reservation not found',
+        status: 404,
+      });
+    }
+    if (!quote.booking) {
+      throw new RpcException({
+        code: 'BOOKING_NOT_FOUND',
+        message: 'Create the booking from this quote before assigning a unit',
+        status: 409,
+      });
+    }
+    if (!PRE_CONFIRM_BOOKING_STATUSES.has(quote.booking.status)) {
+      throw new RpcException({
+        code: 'UNIT_NOT_ASSIGNABLE',
+        message: `Cannot change the fleet unit when booking status is ${quote.booking.status}`,
+        status: 409,
+        details: [{ status: quote.booking.status }],
+      });
+    }
+
+    const booking = quote.booking.unitId === dto.unitId
+      ? quote.booking
+      : await this.prisma.booking.update({
+          where: { id: quote.booking.id },
+          data: { unitId: dto.unitId },
+        });
+
+    return { data: toReservationDto({ ...quote, booking }) };
   }
 
   /**
@@ -850,6 +1010,115 @@ function toBookingDto(booking: Booking): BookingDto {
         : null,
     createdAt: booking.createdAt.toISOString(),
     updatedAt: booking.updatedAt.toISOString(),
+  };
+}
+
+function parseReservationDate(value: string, field: string): Date {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    throw new RpcException({
+      code: 'VALIDATION_ERROR',
+      message: `Invalid ${field}`,
+      status: 400,
+      details: [{ field }],
+    });
+  }
+  return date;
+}
+
+function reservationStatusWhere(
+  status: ReservationStatusLabel,
+): Prisma.QuoteWhereInput {
+  switch (status) {
+    case 'quote_requested':
+      return {
+        OR: [
+          { status: 'received', booking: { is: null } },
+          { booking: { is: { status: 'quote_requested' } } },
+        ],
+      };
+    case 'quoted':
+      return {
+        OR: [
+          { status: 'quoted', booking: { is: null } },
+          { booking: { is: { status: 'quoted' } } },
+        ],
+      };
+    case 'awaiting_payment':
+    case 'confirmed':
+    case 'in_progress':
+    case 'completed':
+    case 'no_show':
+      return { booking: { is: { status } } };
+    case 'cancelled':
+      return {
+        OR: [
+          { status: 'cancelled', booking: { is: null } },
+          { status: 'expired', booking: { is: null } },
+          { booking: { is: { status: 'cancelled' } } },
+        ],
+      };
+    default:
+      return { status: 'converted', booking: { is: null } };
+  }
+}
+
+function quoteStatusToReservationStatus(
+  status: QuoteStatus,
+): ReservationStatusLabel {
+  switch (status) {
+    case 'received':
+      return 'quote_requested';
+    case 'quoted':
+      return 'quoted';
+    case 'expired':
+    case 'cancelled':
+      return 'cancelled';
+    case 'converted':
+      return 'confirmed';
+    default:
+      return 'quote_requested';
+  }
+}
+
+function toReservationDto(quote: QuoteWithBooking): ReservationDto {
+  const booking = quote.booking;
+  const vehicleModelId = booking?.vehicleModelId ?? quote.vehicleModelId;
+  const status = booking
+    ? (booking.status as ReservationStatusLabel)
+    : quoteStatusToReservationStatus(quote.status);
+
+  return {
+    id: quote.id,
+    status,
+    quote: toQuoteDto(quote),
+    customer: {
+      id: quote.customerId,
+      name: quote.customerName,
+      phone: quote.customerPhone,
+      email: quote.customerEmail,
+      language: quote.language,
+    },
+    trip: {
+      service: quote.service,
+      vehicleModelId,
+      pickupLocationId: quote.pickupLocationId,
+      pickupLabel: booking?.pickupLabel ?? quote.pickupLabel,
+      dropoffLocationId: quote.dropoffLocationId,
+      dropoffLabel: booking?.dropoffLabel ?? quote.dropoffLabel,
+      startAt: (booking?.startAt ?? quote.startAt).toISOString(),
+      endAt: booking?.endAt?.toISOString() ?? quote.endAt?.toISOString() ?? null,
+      passengers: quote.passengers,
+      duration: quote.duration ? DURATION_TO_LABEL[quote.duration] : null,
+      flightNumber: booking?.flightNumber ?? quote.flightNumber,
+      notes: quote.notes,
+    },
+    vehicleModel: { id: vehicleModelId },
+    fleetUnit: { id: booking?.unitId ?? null },
+    driver: { id: booking?.driverId ?? null },
+    booking: booking ? toBookingDto(booking) : null,
+    createdAt: quote.createdAt.toISOString(),
+    updatedAt: (booking?.updatedAt ?? quote.createdAt).toISOString(),
   };
 }
 

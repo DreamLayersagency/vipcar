@@ -38,6 +38,7 @@ services:
       context: .
       dockerfile: apps/identity/Dockerfile
     environment:
+      DATABASE_PROVIDER: postgresql
       DATABASE_URL: postgresql://vipcar:vipcar@postgres:5432/vipcar?schema=identity
       NATS_URL: nats://nats:4222
       JWT_SECRET: ${JWT_SECRET:-replace-with-long-random-string}
@@ -68,6 +69,7 @@ services:
       context: .
       dockerfile: apps/catalog/Dockerfile
     environment:
+      DATABASE_PROVIDER: postgresql
       DATABASE_URL: postgresql://vipcar:vipcar@postgres:5432/vipcar?schema=catalog
       NATS_URL: nats://nats:4222
       CATALOG_HTTP_PORT: 3002
@@ -95,6 +97,7 @@ services:
       context: .
       dockerfile: apps/cms/Dockerfile
     environment:
+      DATABASE_PROVIDER: postgresql
       DATABASE_URL: postgresql://vipcar:vipcar@postgres:5432/vipcar?schema=cms
       NATS_URL: nats://nats:4222
       CMS_HTTP_PORT: 3003
@@ -122,6 +125,7 @@ services:
       context: .
       dockerfile: apps/booking/Dockerfile
     environment:
+      DATABASE_PROVIDER: postgresql
       DATABASE_URL: postgresql://vipcar:vipcar@postgres:5432/vipcar?schema=booking
       NATS_URL: nats://nats:4222
       BOOKING_HTTP_PORT: 3004
@@ -149,6 +153,7 @@ services:
       context: .
       dockerfile: apps/notify/Dockerfile
     environment:
+      DATABASE_PROVIDER: postgresql
       DATABASE_URL: postgresql://vipcar:vipcar@postgres:5432/vipcar?schema=notify
       NATS_URL: nats://nats:4222
       NOTIFY_HTTP_PORT: 3005
@@ -180,6 +185,7 @@ services:
       context: .
       dockerfile: apps/fleet/Dockerfile
     environment:
+      DATABASE_PROVIDER: postgresql
       DATABASE_URL: postgresql://vipcar:vipcar@postgres:5432/vipcar?schema=fleet
       NATS_URL: nats://nats:4222
       FLEET_HTTP_PORT: 3006
@@ -211,6 +217,7 @@ services:
       context: .
       dockerfile: apps/billing/Dockerfile
     environment:
+      DATABASE_PROVIDER: postgresql
       DATABASE_URL: postgresql://vipcar:vipcar@postgres:5432/vipcar?schema=billing
       NATS_URL: nats://nats:4222
       BILLING_HTTP_PORT: 3007
@@ -239,6 +246,7 @@ services:
       context: .
       dockerfile: apps/dispatch/Dockerfile
     environment:
+      DATABASE_PROVIDER: postgresql
       DATABASE_URL: postgresql://vipcar:vipcar@postgres:5432/vipcar?schema=dispatch
       NATS_URL: nats://nats:4222
       DISPATCH_HTTP_PORT: 3008

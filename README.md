@@ -8,9 +8,13 @@ Bilingual (EN/FR) car rental, airport transfer, and chauffeur platform for Tunis
 
 ## Local development
 
+By default, local development uses SQLite, so PostgreSQL is not required on the
+developer machine. Each service gets its own database under `.local-data/`.
+The existing PostgreSQL schemas, migrations, and Docker setup remain the
+production path.
+
 ```bash
 cp .env.example .env
-docker compose up -d postgres redis nats
 npm install
 npm run prisma:identity:deploy
 npm run prisma:identity:seed
@@ -35,6 +39,14 @@ npm run dev:gateway
 npm run dev:web
 ```
 
+The `prisma:*:deploy` commands map to `prisma db push` in SQLite mode. To use
+PostgreSQL locally or in production, set `DATABASE_PROVIDER=postgresql` and
+provide the existing PostgreSQL connection variables before running the same
+commands. Docker Compose continues to use PostgreSQL.
+
+Redis and NATS are still required by the gateway and notification services;
+start them with your preferred local installation when running the full stack.
+
 - Site: http://localhost:5173
 - Admin (staff): http://localhost:5173/admin — **same Vite app and port** as the public site (`npm run dev:web`). Path routing under `/admin/*`, not a second origin or CORS setup.
 - API: http://localhost:3000/v1/health
@@ -44,11 +56,10 @@ Full stack (including Nest containers): `docker compose up --build` after `.env`
 
 ## Auth e2e test
 
-Integration test for `POST /v1/auth/register` → `POST /v1/auth/login` → `GET /v1/auth/me` (Bearer). It hits a **running** gateway (which talks to identity over NATS + Postgres).
+Integration test for `POST /v1/auth/register` → `POST /v1/auth/login` → `GET /v1/auth/me` (Bearer). It hits a **running** gateway (which talks to identity over NATS + the selected database provider).
 
 ```bash
-cp .env.example .env   # if needed
-docker compose up -d postgres redis nats
+cp .env.example .env   # if needed; SQLite is the default local database
 npm install
 npm run prisma:identity:deploy
 npm run dev:identity   # separate terminal
@@ -58,7 +69,8 @@ npm run test:e2e:auth
 
 Optional: `GATEWAY_URL=http://127.0.0.1:3000 npm run test:e2e:auth` (default is that URL).
 
-With Nest containers instead of `dev:*`:
+With PostgreSQL and Nest containers instead of `dev:*`, set
+`DATABASE_PROVIDER=postgresql` in `.env` first:
 
 ```bash
 docker compose up --build -d

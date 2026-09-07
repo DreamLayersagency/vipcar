@@ -8,6 +8,7 @@ import {
   IsString,
   IsUUID,
   Max,
+  MaxLength,
   Min,
   MinLength,
   ValidateIf,
@@ -326,6 +327,112 @@ export const BOOKING_STATUSES = [
 ] as const;
 export type BookingStatusLabel = (typeof BOOKING_STATUSES)[number];
 
+/** Unified operational status used by the staff reservation workspace. */
+export const RESERVATION_STATUSES = [...BOOKING_STATUSES] as const;
+export type ReservationStatusLabel = (typeof RESERVATION_STATUSES)[number];
+
+/** Staff inbox `GET /v1/ops/reservations` query. */
+export class ListReservationsDto {
+  @IsOptional()
+  @IsString()
+  @IsIn([...RESERVATION_STATUSES])
+  status?: ReservationStatusLabel;
+
+  @IsOptional()
+  @IsString()
+  @IsIn([...SERVICE_TYPES])
+  service?: ServiceTypeLabel;
+
+  @IsOptional()
+  @IsString()
+  @IsIn([...CHANNELS])
+  channel?: ChannelLabel;
+
+  /** ISO datetime lower bound for the trip start. */
+  @IsOptional()
+  @IsString()
+  @MinLength(1)
+  from?: string;
+
+  /** ISO datetime upper bound for the trip start. */
+  @IsOptional()
+  @IsString()
+  @MinLength(1)
+  to?: string;
+
+  /** Matches reservation id, customer contact, trip locations or flight. */
+  @IsOptional()
+  @IsString()
+  @MinLength(1)
+  @MaxLength(200)
+  search?: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  page?: number = 1;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(100)
+  limit?: number = 20;
+}
+
+/** NATS `booking.ops.reservation.get` — accepts quoteId or bookingId. */
+export class GetReservationDto {
+  @IsUUID()
+  reservationId!: string;
+}
+
+/** NATS `booking.ops.reservation.assign` — assign a fleet unit before confirm. */
+export class AssignReservationUnitDto {
+  @IsUUID()
+  quoteId!: string;
+
+  @IsUUID()
+  unitId!: string;
+
+  @IsOptional()
+  @IsString()
+  correlationId?: string;
+}
+
+/** HTTP body for `POST /v1/ops/reservations/:id/assign`. */
+export class AssignReservationUnitHttpDto {
+  @IsUUID()
+  unitId!: string;
+}
+
+/** HTTP body for `PATCH /v1/ops/reservations/:id/status`. */
+export class UpdateReservationStatusHttpDto {
+  @IsString()
+  @IsIn([...RESERVATION_STATUSES])
+  status!: ReservationStatusLabel;
+
+  @IsOptional()
+  @IsUUID()
+  customerId?: string;
+
+  @IsOptional()
+  @IsUUID()
+  unitId?: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  priceTnd?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  depositTnd?: number;
+}
+
 export class BookingDto {
   id!: string;
   quoteId!: string;
@@ -346,6 +453,50 @@ export class BookingDto {
   priceTnd!: number;
   depositTnd!: number;
   cancellationPolicySnapshot!: Record<string, unknown> | null;
+  createdAt!: string;
+  updatedAt!: string;
+}
+
+/** Stable operational resource references; enrichment comes from owning services. */
+export class ReservationResourceRefDto {
+  id!: string | null;
+}
+
+export class ReservationCustomerDto {
+  id!: string | null;
+  name!: string;
+  phone!: string;
+  email!: string | null;
+  language!: LocaleLabel;
+}
+
+export class ReservationTripDto {
+  service!: ServiceTypeLabel;
+  vehicleModelId!: string | null;
+  pickupLocationId!: string | null;
+  pickupLabel!: string | null;
+  dropoffLocationId!: string | null;
+  dropoffLabel!: string | null;
+  startAt!: string;
+  endAt!: string | null;
+  passengers!: number | null;
+  duration!: ChauffeurDurationLabel | null;
+  flightNumber!: string | null;
+  notes!: string | null;
+}
+
+/** Unified staff view: quote → customer → trip → resources → booking. */
+export class ReservationDto {
+  /** Canonical reservation reference: the originating quote id. */
+  id!: string;
+  status!: ReservationStatusLabel;
+  quote!: QuoteDto;
+  customer!: ReservationCustomerDto;
+  trip!: ReservationTripDto;
+  vehicleModel!: ReservationResourceRefDto;
+  fleetUnit!: ReservationResourceRefDto;
+  driver!: ReservationResourceRefDto;
+  booking!: BookingDto | null;
   createdAt!: string;
   updatedAt!: string;
 }

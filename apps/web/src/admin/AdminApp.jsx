@@ -14,16 +14,18 @@ import { getAdminLocale, setAdminLocale, t } from './i18n.js';
 import { CorporatePage } from './CorporatePages.jsx';
 import { DispatchPage } from './DispatchPages.jsx';
 import { FleetPage } from './FleetPages.jsx';
+import { DashboardPage } from './DashboardPage.jsx';
+import { ReservationDetailPage, ReservationsListPage } from './ReservationsPages.jsx';
 import { ArticleFormPage, ArticlesListPage } from './ArticlesPages.jsx';
 import { QuoteDetailPage, QuotesListPage } from './QuotesPages.jsx';
 import { VehicleFormPage, VehiclesListPage } from './VehiclesPages.jsx';
 
-/** @typedef {'dashboard' | 'login' | 'quotes' | 'quote-detail' | 'vehicles' | 'vehicle-form' | 'articles' | 'article-form' | 'fleet' | 'dispatch' | 'corporate' | 'unknown'} AdminPage */
+/** @typedef {'dashboard' | 'login' | 'reservations' | 'reservation-detail' | 'quotes' | 'quote-detail' | 'vehicles' | 'vehicle-form' | 'articles' | 'article-form' | 'fleet' | 'dispatch' | 'corporate' | 'unknown'} AdminPage */
 /** @typedef {'loading' | 'ready' | 'denied'} AuthStatus */
 
 /**
  * @param {string} pathname
- * @returns {{ page: AdminPage, path: string, quoteId?: string, vehicleSlug?: string, articleSlug?: string }}
+ * @returns {{ page: AdminPage, path: string, reservationId?: string, quoteId?: string, vehicleSlug?: string, articleSlug?: string }}
  */
 export function parseAdminRoute(pathname) {
   const parts = pathname.split('/').filter(Boolean);
@@ -33,6 +35,16 @@ export function parseAdminRoute(pathname) {
   const rest = parts.slice(1);
   if (!rest.length) return { page: 'dashboard', path: '/admin' };
   if (rest[0] === 'login') return { page: 'login', path: '/admin/login' };
+  if (rest[0] === 'reservations') {
+    if (rest[1]) {
+      return {
+        page: 'reservation-detail',
+        path: `/admin/reservations/${rest[1]}`,
+        reservationId: rest[1],
+      };
+    }
+    return { page: 'reservations', path: '/admin/reservations' };
+  }
   if (rest[0] === 'quotes') {
     if (rest[1]) {
       return {
@@ -157,7 +169,9 @@ function AdminShell({ page, title, user, locale, onLocale, onLogout, children })
   const copy = t(locale);
   const [navOpen, setNavOpen] = React.useState(false);
   const navPage =
-    page === 'quote-detail'
+    page === 'reservation-detail'
+      ? 'reservations'
+      : page === 'quote-detail'
       ? 'quotes'
       : page === 'vehicle-form'
         ? 'vehicles'
@@ -165,6 +179,8 @@ function AdminShell({ page, title, user, locale, onLocale, onLogout, children })
           ? 'articles'
           : page;
   const NAV = [
+    { id: 'dashboard', href: '/admin', label: copy.nav.dashboard },
+    { id: 'reservations', href: '/admin/reservations', label: copy.nav.reservations },
     { id: 'quotes', href: '/admin/quotes', label: copy.nav.quotes },
     { id: 'vehicles', href: '/admin/vehicles', label: copy.nav.vehicles },
     { id: 'articles', href: '/admin/articles', label: copy.nav.articles },
@@ -380,7 +396,7 @@ function reasonBanner(reason, locale) {
  */
 export function AdminApp({ pathname }) {
   const route = parseAdminRoute(pathname);
-  const { page, path, quoteId, vehicleSlug, articleSlug } = route;
+  const { page, path, reservationId, quoteId, vehicleSlug, articleSlug } = route;
   const [locale, setLocale] = React.useState(() => getAdminLocale());
   const [authStatus, setAuthStatus] = React.useState(
     /** @type {AuthStatus} */ (page === 'login' ? 'ready' : 'loading'),
@@ -389,18 +405,14 @@ export function AdminApp({ pathname }) {
   const copy = t(locale);
 
   React.useEffect(() => {
-    if (page === 'dashboard') {
-      go('/admin/quotes');
-    }
-  }, [page]);
-
-  React.useEffect(() => {
     document.title =
       page === 'login'
         ? locale === 'fr'
           ? 'Connexion staff | VIPCAR Ops'
           : 'Staff sign in | VIPCAR Ops'
-        : page === 'quotes' || page === 'quote-detail'
+        : page === 'reservations' || page === 'reservation-detail'
+          ? `${copy.reservations.title} | VIPCAR Ops`
+          : page === 'quotes' || page === 'quote-detail'
           ? `${copy.quotes.title} | VIPCAR Ops`
           : page === 'vehicles' || page === 'vehicle-form'
             ? `${copy.vehicles.title} | VIPCAR Ops`
@@ -500,18 +512,6 @@ export function AdminApp({ pathname }) {
     );
   }
 
-  if (page === 'dashboard') {
-    return (
-      <div className="admin-root">
-        <div className="admin-login">
-          <p className="admin-muted" aria-live="polite">
-            {copy.checkingSession}
-          </p>
-        </div>
-      </div>
-    );
-  }
-
   if (authStatus !== 'ready') {
     return (
       <div className="admin-root">
@@ -525,7 +525,11 @@ export function AdminApp({ pathname }) {
   }
 
   const title =
-    page === 'quotes' || page === 'quote-detail'
+    page === 'dashboard'
+      ? copy.dashboard.title
+      : page === 'reservations' || page === 'reservation-detail'
+        ? copy.reservations.title
+      : page === 'quotes' || page === 'quote-detail'
       ? page === 'quote-detail'
         ? copy.quotes.detailTitle
         : copy.quotes.title
@@ -559,6 +563,15 @@ export function AdminApp({ pathname }) {
         onLocale={handleLocale}
         onLogout={handleLogout}
       >
+        {page === 'dashboard' ? (
+          <DashboardPage locale={locale} copy={copy} navigate={go} />
+        ) : null}
+        {page === 'reservations' ? (
+          <ReservationsListPage locale={locale} copy={copy} navigate={go} />
+        ) : null}
+        {page === 'reservation-detail' && reservationId ? (
+          <ReservationDetailPage reservationId={reservationId} locale={locale} copy={copy} navigate={go} />
+        ) : null}
         {page === 'quotes' ? (
           <QuotesListPage locale={locale} copy={copy} navigate={go} />
         ) : null}
@@ -611,6 +624,7 @@ export function AdminApp({ pathname }) {
  * @param {ReturnType<typeof t>} copy
  */
 function pageTitle(page, copy) {
+  if (page === 'dashboard') return copy.dashboard.title;
   if (page === 'vehicles' || page === 'vehicle-form') return copy.vehicles.title;
   if (page === 'articles' || page === 'article-form') return copy.articles.title;
   if (page === 'fleet') return copy.fleet.title;

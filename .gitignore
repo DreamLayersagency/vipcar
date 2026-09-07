@@ -6,6 +6,8 @@ report_render/
 .env
 .env.*
 !.env.example
+.local-data/
+apps/*/prisma/schema.sqlite.generated.prisma
 apps/identity/generated/
 apps/catalog/generated/
 apps/cms/generated/

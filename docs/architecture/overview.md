@@ -33,7 +33,7 @@ gateway / notify →  Redis
 
 | Component | Local default |
 |---|---|
-| PostgreSQL | `localhost:5432` · db `vipcar` · user `vipcar` |
+| Database | SQLite by default for local development (`.local-data/<service>.db`); PostgreSQL for production and Docker |
 | Redis | `localhost:6379` |
 | NATS | `localhost:4222` (JetStream enabled) |
 | Gateway | `http://localhost:3000` |
@@ -94,11 +94,15 @@ Keep EN/FR routes and prerender. Catalog/CMS APIs will feed the SPA later; do no
 
 ## Local development
 
+Local development defaults to SQLite to avoid requiring Docker or a local
+PostgreSQL server. Set `DATABASE_PROVIDER=postgresql` when you need to run
+against PostgreSQL; production and Docker Compose keep the existing
+PostgreSQL schemas and migrations.
+
 ```bash
 cp .env.example .env
-docker compose up -d postgres redis nats
 npm install
-npm run prisma:identity:migrate
+npm run prisma:identity:deploy
 npm run dev:identity
 npm run dev:gateway
 npm run dev:web

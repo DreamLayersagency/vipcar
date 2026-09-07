@@ -42,6 +42,7 @@ async function bootstrap() {
           '',
           'Staff ops (`ops` tag, Bearer JWT, roles ops_agent|admin unless noted):',
           '- Quotes inbox: `GET /v1/ops/quotes`, `PATCH /v1/ops/quotes/:id` (price), `POST /v1/ops/quotes/:id/confirm`',
+          '- Reservations: `GET /v1/ops/reservations`, `GET /v1/ops/reservations/:id`, plus price, confirm, status and fleet-unit assignment actions',
           '- Bookings: `POST /v1/ops/bookings/:id/confirm`',
           '- Catalog/CMS: `GET /v1/ops/catalog/vehicles`, `GET|PUT /v1/ops/catalog/vehicles/:slug`, `GET /v1/ops/cms/articles`, `GET|PUT /v1/ops/cms/articles/:slug`',
           '- Fleet: `GET /v1/ops/fleet/availability`',

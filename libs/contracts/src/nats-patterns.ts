@@ -56,6 +56,11 @@ export const NATS_PATTERNS = {
     get: 'booking.get',
     /** Customer portal — list bookings for a customerId (gateway sets from JWT). */
     list: 'booking.list',
+    ops: {
+      reservationsList: 'booking.ops.reservations.list',
+      reservationGet: 'booking.ops.reservation.get',
+      reservationAssign: 'booking.ops.reservation.assign',
+    },
     confirm: 'booking.confirm',
     cancel: 'booking.cancel',
     status: {

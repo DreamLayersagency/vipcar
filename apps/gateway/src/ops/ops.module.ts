@@ -7,6 +7,7 @@ import { OpsCorporateController } from './ops-corporate.controller';
 import { OpsDispatchController } from './ops-dispatch.controller';
 import { OpsFleetController } from './ops-fleet.controller';
 import { OpsQuotesController } from './ops-quotes.controller';
+import { OpsReservationsController } from './ops-reservations.controller';
 
 @Module({
   imports: [AuthModule],
@@ -18,6 +19,7 @@ import { OpsQuotesController } from './ops-quotes.controller';
     OpsDispatchController,
     OpsFleetController,
     OpsQuotesController,
+    OpsReservationsController,
   ],
 })
 export class OpsModule {}

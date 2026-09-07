@@ -322,7 +322,7 @@ function parseDate(value: string, field: string): Date {
   return date;
 }
 
-function toQuoteDto(quote: Quote): QuoteDto {
+export function toQuoteDto(quote: Quote): QuoteDto {
   return {
     id: quote.id,
     service: quote.service,

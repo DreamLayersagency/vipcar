@@ -5,9 +5,12 @@ import {
   ConfirmBookingDto,
   DOMAIN_EVENTS,
   GetBookingDto,
+  GetReservationDto,
+  ListReservationsDto,
   ListMyBookingsDto,
   NATS_PATTERNS,
   UpdateBookingStatusDto,
+  type AssignReservationUnitDto,
   type DispatchTripCompletedEventDto,
   type PaymentCapturedEventDto,
 } from '@vipcar/contracts';
@@ -25,6 +28,21 @@ export class BookingsController {
   @MessagePattern(NATS_PATTERNS.booking.list)
   listMine(@Payload() dto: ListMyBookingsDto) {
     return this.bookings.listMine(dto);
+  }
+
+  @MessagePattern(NATS_PATTERNS.booking.ops.reservationsList)
+  listOpsReservations(@Payload() dto: ListReservationsDto) {
+    return this.bookings.listOpsReservations(dto);
+  }
+
+  @MessagePattern(NATS_PATTERNS.booking.ops.reservationGet)
+  getOpsReservation(@Payload() dto: GetReservationDto) {
+    return this.bookings.getOpsReservation(dto);
+  }
+
+  @MessagePattern(NATS_PATTERNS.booking.ops.reservationAssign)
+  assignReservationUnit(@Payload() dto: AssignReservationUnitDto) {
+    return this.bookings.assignReservationUnit(dto);
   }
 
   @MessagePattern(NATS_PATTERNS.booking.confirm)

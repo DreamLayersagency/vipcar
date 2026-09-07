@@ -1,7 +1,13 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { PrismaClient } from '../generated/prisma';
+import { resolve } from 'node:path';
 
 function resolveDispatchDatabaseUrl() {
+  if (process.env.DATABASE_PROVIDER === 'sqlite') {
+    const dbPath = resolve(process.cwd(), '../../.local-data/dispatch.db').replace(/\\/g, '/');
+    process.env.DATABASE_URL = `file:${dbPath}`;
+    return;
+  }
   if (process.env.DISPATCH_DATABASE_URL) {
     process.env.DATABASE_URL = process.env.DISPATCH_DATABASE_URL;
     return;
