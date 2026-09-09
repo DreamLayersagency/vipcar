@@ -13,6 +13,7 @@ apps/fleet       Physical units and calendar
 apps/dispatch    Drivers and trip assignments
 apps/billing     Payments, deposits, invoices
 apps/notify      WhatsApp + email (delivery log)
+apps/analytics   First-party traffic events and visitor summaries
 libs/contracts   DTOs, events, NATS patterns, roles
 ```
 
@@ -26,7 +27,7 @@ See [TASKS.md](../backend/TASKS.md). Phase **J** is path-based backoffice in `ap
 Browser  →  apps/web  :5173  /{en|fr}/...  (public)
 Staff    →  apps/web  :5173  /admin/...   (backoffice, same app/port)
 Both     →  apps/gateway  :3000  /v1
-gateway  →  NATS  →  identity, catalog, cms, booking, fleet, dispatch, billing, notify
+gateway  →  NATS  →  identity, catalog, cms, booking, fleet, dispatch, billing, notify, analytics
 services →  PostgreSQL schemas (per service)
 gateway / notify →  Redis
 ```

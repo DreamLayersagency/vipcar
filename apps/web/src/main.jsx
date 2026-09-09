@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import './styles.css';
 import './premium.css';
-import { initAnalytics, trackEvent } from './analytics';
+import { initAnalytics, trackEvent, trackPageView } from './analytics';
 import {
   buildWhatsAppQuoteMessage,
   createQuote,
@@ -240,7 +240,11 @@ function routeInfo() {
 }
 
 function link(lang, path='') { return `/${lang}${path}`; }
-function img(name) { return `${ASSET}/${name}`; }
+function img(name) {
+  const value = String(name || '');
+  if (/^(data:|https?:\/\/|\/)/i.test(value)) return value;
+  return `${ASSET}/${value}`;
+}
 function go(path) { history.pushState({}, '', path); window.dispatchEvent(new PopStateEvent('popstate')); scrollTo({top:0, behavior:'smooth'}); }
 
 function SmartLink({href, children, className='', onClick, ...props}) {
@@ -381,6 +385,10 @@ function QuoteWidget({lang,compact=false,selectedVehicle=null,serviceType=null})
       setError(text(lang,'Please choose a return date for your rental.','Choisissez une date de retour pour votre location.','اختر تاريخ عودة السيارة.'));
       return false;
     }
+    if(service==='rental'&&values.endDate<values.date){
+      setError(text(lang,'Your return date must be after the pick-up date.','La date de retour doit être postérieure à la date de départ.','يجب أن يكون تاريخ العودة بعد تاريخ الاستلام.'));
+      return false;
+    }
     if(service==='transfer'&&!values.dropoff){
       setError(text(lang,'Please add your destination for the airport transfer.','Ajoutez votre destination pour le transfert aéroport.','أضف وجهتك لنقل المطار.'));
       return false;
@@ -414,6 +422,14 @@ function QuoteWidget({lang,compact=false,selectedVehicle=null,serviceType=null})
     const durationValue=service==='chauffeur'?submittedData.duration:undefined;
     if(!name||!phone){
       setError(text(lang,'Please enter your name and phone number.','Indiquez votre nom et votre numéro de téléphone.','أدخل اسمك ورقم هاتفك.'));
+      return;
+    }
+    if(phone.replace(/\D/g,'').length<7){
+      setError(text(lang,'Please enter a valid phone or WhatsApp number.','Indiquez un numéro de téléphone ou WhatsApp valide.','أدخل رقماً صالحاً للهاتف أو واتساب.'));
+      return;
+    }
+    if(email&&!/^\S+@\S+\.\S+$/.test(email)){
+      setError(text(lang,'Please enter a valid email address or leave it blank.','Indiquez une adresse e-mail valide ou laissez le champ vide.','أدخل عنوان بريد إلكتروني صالحاً أو اترك الحقل فارغاً.'));
       return;
     }
     if(!validateTrip(submittedData))return;
@@ -469,7 +485,7 @@ function QuoteWidget({lang,compact=false,selectedVehicle=null,serviceType=null})
     setData({pickup:locations[0],dropoff:'',date:'',endDate:'',flightNumber:'',duration:'full-day',passengers:'2',name:'',phone:'',email:'',notes:''});
   };
   if(success)return <QuoteSuccess lang={lang} request={success} compact={compact} onWhatsApp={()=>openWhatsAppQuote(success.whatsappText,WA)} onReset={reset}/>;
-  return <form className={compact?'quote compact':'quote'} onSubmit={submit}>
+  return <form className={compact?'quote compact':'quote'} noValidate onSubmit={submit}>
     <div className="quote-heading"><div className="quote-heading-copy"><p className="overline">{t.startTrip}</p><h3>{t.whatArranging}</h3><p className="quote-intro">{t.quoteIntro}</p></div><span><ShieldCheck size={15}/>{t.noPayment}</span></div>
     <div className="quote-progress" aria-label={text(lang,'Quote steps','Étapes du devis','خطوات عرض السعر')}><span className={step===1?'active':''}>01 <b>{t.tripStep}</b></span><i/><span className={step===2?'active':''}>02 <b>{t.contactStep}</b></span></div>
     {selectedVehicle&&<div className="quote-selected-vehicle" aria-label={`${t.selectedVehicle}: ${selectedVehicle.name}`}><Car size={20}/><span><small>{t.selectedVehicle}</small><strong>{selectedVehicle.name}</strong></span><b>{formatCurrency(selectedVehicle.price,currency,lang)} {t.day}</b></div>}
@@ -579,7 +595,44 @@ function LocalSeoContent({lang,item,airport=false}) {
   return <section className="section seo-content local-seo-content"><div className="seo-content-intro"><p className="overline">{displayName} · VIPCAR</p><h2>{title}</h2><p>{intro}</p></div><div className="seo-content-points">{points.map(([heading,pointText],index)=><article key={heading}><span>0{index+1}</span><h3>{heading}</h3><p>{pointText}</p></article>)}</div></section>;
 }
 
-function ServicePage({lang,type}) { const fi=languageIndex(lang); const s=services.find(x=>x.key===type)||services[0]; const details={rental:[['Short and long-term rentals','Locations courte et longue durée','تأجير قصير أو طويل الأمد'],['Airport and hotel delivery','Livraison à l’aéroport et à l’hôtel','توصيل إلى المطار أو الفندق'],['Economy to luxury fleet','Flotte économique à premium','أسطول من الاقتصادي إلى الفاخر']],transfer:[['Flight tracking and meet-and-greet','Suivi du vol et accueil personnalisé','متابعة الرحلة والاستقبال الشخصي'],['Tunis, Djerba and Enfidha airports','Aéroports de Tunis, Djerba et Enfidha','مطارات تونس وجربة والنفيضة'],['Fixed quote agreed in advance','Devis fixe confirmé à l’avance','سعر ثابت مؤكد مسبقاً']],chauffeur:[['English- and French-speaking drivers','Chauffeurs anglophones et francophones','سائقون يتحدثون الإنجليزية والفرنسية'],['By the hour, day or longer','À l’heure, à la journée ou davantage','بالساعة أو باليوم أو لفترة أطول'],['Business, events and touring','Affaires, événements et circuits','للأعمال والفعاليات والجولات']]}[s.key].map(x=>x[fi]); return <main className="page"><PageHero image={s.image} eyebrow={copy[lang].serviceEyebrow} title={s.title[fi]} text={s.text[fi]}/><section className="section service-detail"><div><p className="overline">{copy[lang].designedAroundTrip}</p><h2>{copy[lang].mobilityTitle}</h2><p>{s.text[fi]} {text(lang,'Send your schedule and preferences; the VIPCAR team will confirm availability, vehicle and price before you travel.','Envoyez votre programme et vos préférences ; l’équipe VIPCAR confirme la disponibilité, le véhicule et le tarif avant votre départ.','أرسل برنامجك وتفضيلاتك؛ وسيؤكد فريق VIPCAR التوفر والسيارة والسعر قبل سفرك.')}</p><ul>{details.map(x=><li key={x}><Check/>{x}</li>)}</ul></div><QuoteWidget lang={lang} serviceType={s.key}/></section><ServiceSeoContent lang={lang} type={s.key}/>{s.key==='rental'&&<section className="section"><SectionHead eyebrow={text(lang,'VIPCAR fleet','Flotte VIPCAR','أسطول VIPCAR')} title={copy[lang].fleetTitle}/><div className="vehicle-grid featured">{fleet.slice(0,3).map(c=><VehicleCard car={c} lang={lang} key={c.slug}/>)}</div></section>}<Faq lang={lang}/><Cta lang={lang}/></main> }
+function FleetCarousel({lang}) {
+  const viewportRef = React.useRef(null);
+  const move = (direction) => {
+    const viewport = viewportRef.current;
+    if (!viewport) return;
+    viewport.scrollBy({ left: direction * Math.max(280, viewport.clientWidth * 0.82), behavior: 'smooth' });
+  };
+  return <div className="fleet-carousel">
+    <div className="fleet-carousel__controls">
+      <p className="fleet-carousel__count">{fleet.length} {text(lang, 'vehicles ready to discover', 'véhicules à découvrir', 'سيارة جاهزة للاكتشاف')}</p>
+      <div className="fleet-carousel__buttons">
+        <button type="button" aria-label={text(lang, 'Previous vehicles', 'Véhicules précédents', 'السيارات السابقة')} onClick={() => move(-1)}><ArrowRight className="fleet-carousel__arrow fleet-carousel__arrow--previous" size={18}/></button>
+        <button type="button" aria-label={text(lang, 'Next vehicles', 'Véhicules suivants', 'السيارات التالية')} onClick={() => move(1)}><ArrowRight size={18}/></button>
+      </div>
+    </div>
+    <div className="fleet-carousel__viewport" ref={viewportRef}>
+      {fleet.slice(0, 8).map((c, index) => <VehicleCard car={c} lang={lang} key={c.slug} loading={index < 4 ? 'eager' : 'lazy'}/>) }
+    </div>
+  </div>;
+}
+
+function PageTransition({routeKey}) {
+  const [visible, setVisible] = useState(false);
+  const firstRoute = React.useRef(true);
+  useEffect(() => {
+    if (firstRoute.current) {
+      firstRoute.current = false;
+      return undefined;
+    }
+    setVisible(true);
+    const timer = window.setTimeout(() => setVisible(false), 480);
+    return () => window.clearTimeout(timer);
+  }, [routeKey]);
+  if (!visible) return null;
+  return <div className="page-transition" aria-hidden="true"><div className="page-transition__inner"><span className="page-transition__mark">V</span><span className="page-transition__line"/></div></div>;
+}
+
+function ServicePage({lang,type}) { const fi=languageIndex(lang); const s=services.find(x=>x.key===type)||services[0]; const details={rental:[['Short and long-term rentals','Locations courte et longue durée','تأجير قصير أو طويل الأمد'],['Airport and hotel delivery','Livraison à l’aéroport et à l’hôtel','توصيل إلى المطار أو الفندق'],['Economy to luxury fleet','Flotte économique à premium','أسطول من الاقتصادي إلى الفاخر']],transfer:[['Flight tracking and meet-and-greet','Suivi du vol et accueil personnalisé','متابعة الرحلة والاستقبال الشخصي'],['Tunis, Djerba and Enfidha airports','Aéroports de Tunis, Djerba et Enfidha','مطارات تونس وجربة والنفيضة'],['Fixed quote agreed in advance','Devis fixe confirmé à l’avance','سعر ثابت مؤكد مسبقاً']],chauffeur:[['English- and French-speaking drivers','Chauffeurs anglophones et francophones','سائقون يتحدثون الإنجليزية والفرنسية'],['By the hour, day or longer','À l’heure, à la journée ou davantage','بالساعة أو باليوم أو لفترة أطول'],['Business, events and touring','Affaires, événements et circuits','للأعمال والفعاليات والجولات']]}[s.key].map(x=>x[fi]); return <main className="page"><PageHero image={s.image} eyebrow={copy[lang].serviceEyebrow} title={s.title[fi]} text={s.text[fi]}/><section className="section service-detail"><div><p className="overline">{copy[lang].designedAroundTrip}</p><h2>{copy[lang].mobilityTitle}</h2><p>{s.text[fi]} {text(lang,'Send your schedule and preferences; the VIPCAR team will confirm availability, vehicle and price before you travel.','Envoyez votre programme et vos préférences ; l’équipe VIPCAR confirme la disponibilité, le véhicule et le tarif avant votre départ.','أرسل برنامجك وتفضيلاتك؛ وسيؤكد فريق VIPCAR التوفر والسيارة والسعر قبل سفرك.')}</p><ul>{details.map(x=><li key={x}><Check/>{x}</li>)}</ul></div><QuoteWidget lang={lang} serviceType={s.key}/></section><ServiceSeoContent lang={lang} type={s.key}/>{s.key==='rental'&&<section className="section"><SectionHead eyebrow={text(lang,'VIPCAR fleet','Flotte VIPCAR','أسطول VIPCAR')} title={copy[lang].fleetTitle}/><FleetCarousel lang={lang}/></section>}<Faq lang={lang}/><Cta lang={lang}/></main> }
 
 function VehiclePage({lang,slug}) {
   const [car,setCar]=useState(null);
@@ -796,6 +849,29 @@ function MyBookingsPage({lang}) {
 }
 
 function BookingPage({lang}) {
+  const vehicleSlug=new URLSearchParams(location.search).get('vehicle');
+  const vehicle=fleet.find(x=>x.slug===vehicleSlug);
+  const t=copy[lang];
+  return <main className="booking-page">
+    <section className="booking-intro">
+      <div className="booking-intro-content">
+        <p className="overline">{text(lang,'VIPCAR quote request','Demande de devis VIPCAR','طلب عرض سعر من VIPCAR')}</p>
+        <h1>{text(lang,'Your journey, arranged in a few steps.','Votre trajet, organisé en quelques étapes.','رحلتك منظمة في خطوات بسيطة.')}</h1>
+        <p>{t.quoteSub}</p>
+        {vehicle&&<p className="booking-selection">{t.selectedVehicle}: <strong>{vehicle.name}</strong></p>}
+        <div className="booking-contact" aria-label={text(lang,'Contact VIPCAR','Contacter VIPCAR','التواصل مع VIPCAR')}>
+          <span className="booking-contact-item"><Clock3/><span><small>{text(lang,'Available every day','Disponible chaque jour','متاح كل يوم')}</small><strong>24/7</strong></span></span>
+          <span className="booking-contact-item"><MessageCircle/><span><small>{text(lang,'WhatsApp and phone','WhatsApp et téléphone','واتساب والهاتف')}</small><strong>{PHONE}</strong></span></span>
+        </div>
+      </div>
+    </section>
+    <section className="booking-panel">
+      <QuoteWidget lang={lang} selectedVehicle={vehicle}/>
+    </section>
+  </main>
+}
+
+function BookingPageLegacy({lang}) {
   const [step,setStep]=useState(1), [service,setService]=useState('rental'), [data,setData]=useState({});
   const [error,setError]=useState('');
   const [submitting,setSubmitting]=useState(false);
@@ -1091,6 +1167,7 @@ function Seo({lang,parts}) { useEffect(()=>{let title=text(lang,'Car Rental in T
   const [currency,setCurrency]=useState(getInitialCurrency);
   useEffect(()=>{const h=()=>setPathname(location.pathname);addEventListener('popstate',h);return()=>removeEventListener('popstate',h)},[]);
   useEffect(()=>{try{localStorage.setItem(CURRENCY_STORAGE_KEY,currency)}catch{/* storage can be unavailable in private browsing */}},[currency]);
+  useEffect(()=>{if(!isAdminPathname(pathname))trackPageView(pathname)},[pathname]);
   // Staff backoffice: same Vite app/port, path routing outside public locales.
   if(isAdminPathname(pathname)) return <AdminApp pathname={pathname}/>;
   const route=routeInfo();
@@ -1113,7 +1190,8 @@ function Seo({lang,parts}) { useEffect(()=>{let title=text(lang,'Car Rental in T
   else if(['about','destinations','blog'].includes(parts[0]))page=<ContentPage lang={lang} type={parts[0]}/>;
   else if(parts[0]==='legal'&&parts[1])page=<LegalPage lang={lang} slug={parts[1]}/>;
   else page=<NotFound lang={lang}/>;
-  return <CurrencyContext.Provider value={{currency,setCurrency}}><><Seo lang={lang} parts={parts}/><Motion routeKey={`${lang}/${parts.join('/')}`}/><a className="skip-link" href="#main-content">{lang==='en'?'Skip to main content':'Aller au contenu principal'}</a><Header lang={lang} home={!parts.length}/><div id="main-content">{page}</div><Footer lang={lang}/><FloatingWhatsApp lang={lang}/><SmartLink className="mobile-book" href={link(lang,'/booking')}>{copy[lang].book}<ArrowRight/></SmartLink></></CurrencyContext.Provider>;
+  const routeKey = `${lang}/${parts.join('/')}`;
+  return <CurrencyContext.Provider value={{currency,setCurrency}}><><Seo lang={lang} parts={parts}/><Motion routeKey={routeKey}/><PageTransition routeKey={routeKey}/><a className="skip-link" href="#main-content">{lang==='en'?'Skip to main content':'Aller au contenu principal'}</a><Header lang={lang} home={!parts.length}/><div id="main-content">{page}</div><Footer lang={lang}/><FloatingWhatsApp lang={lang}/><SmartLink className="mobile-book" href={link(lang,'/booking')}>{copy[lang].book}<ArrowRight/></SmartLink></></CurrencyContext.Provider>;
 }
 
 createRoot(document.getElementById('root')).render(<React.StrictMode><App/></React.StrictMode>);

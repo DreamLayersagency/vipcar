@@ -12,6 +12,7 @@ const apps = new Set([
   'fleet',
   'billing',
   'dispatch',
+  'analytics',
 ]);
 
 loadRootEnv();
@@ -24,7 +25,7 @@ const extraArgs = argv.slice(operation ? argv.indexOf(operation) + 1 : argv.leng
 
 if (!apps.has(app) || !operation) {
   console.error(
-    'Usage: node scripts/prisma.cjs --app identity|catalog|cms|booking|notify|fleet|billing|dispatch generate|migrate|deploy|seed',
+    'Usage: node scripts/prisma.cjs --app identity|catalog|cms|booking|notify|fleet|billing|dispatch|analytics generate|migrate|deploy|seed',
   );
   process.exit(1);
 }

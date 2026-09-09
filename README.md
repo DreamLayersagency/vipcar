@@ -3,7 +3,7 @@
 Bilingual (EN/FR) car rental, airport transfer, and chauffeur platform for Tunisia.
 
 - Public site: `apps/web` (Vite + React) — staff backoffice at `/admin` (same app/port, Phase J)
-- HTTP API: `apps/gateway` → NATS → `apps/identity`, `apps/catalog`, `apps/cms`, `apps/booking`, `apps/notify`, `apps/fleet`, `apps/billing`, `apps/dispatch` (more services in later phases)
+- HTTP API: `apps/gateway` → NATS → `apps/identity`, `apps/catalog`, `apps/cms`, `apps/booking`, `apps/notify`, `apps/fleet`, `apps/billing`, `apps/dispatch`, `apps/analytics`
 - Domain and backend plan: [docs/architecture/overview.md](docs/architecture/overview.md) · [docs/backend/TASKS.md](docs/backend/TASKS.md)
 
 ## Local development
@@ -27,6 +27,7 @@ npm run prisma:notify:deploy
 npm run prisma:fleet:deploy
 npm run prisma:billing:deploy
 npm run prisma:dispatch:deploy
+npm run prisma:analytics:deploy
 npm run dev:identity
 npm run dev:catalog
 npm run dev:cms
@@ -35,6 +36,7 @@ npm run dev:notify
 npm run dev:fleet
 npm run dev:billing
 npm run dev:dispatch
+npm run dev:analytics
 npm run dev:gateway
 npm run dev:web
 ```
@@ -46,6 +48,10 @@ commands. Docker Compose continues to use PostgreSQL.
 
 Redis and NATS are still required by the gateway and notification services;
 start them with your preferred local installation when running the full stack.
+
+Visitor analytics are first-party and stored by `apps/analytics`: local traffic
+uses `.local-data/analytics.db`, while production uses the PostgreSQL
+`analytics` schema. The backoffice view is available at `/admin/analytics`.
 
 - Site: http://localhost:5173
 - Admin (staff): http://localhost:5173/admin — **same Vite app and port** as the public site (`npm run dev:web`). Path routing under `/admin/*`, not a second origin or CORS setup.

@@ -2,6 +2,7 @@ import React from 'react';
 import { ApiError, apiBaseUrl } from '../api';
 import {
   Building2,
+  BarChart3,
   Car,
   ClipboardList,
   FileText,
@@ -9,6 +10,7 @@ import {
   Inbox,
   LayoutDashboard,
   Route,
+  UsersRound,
 } from 'lucide-react';
 import {
   clearSession,
@@ -29,8 +31,10 @@ import { ReservationDetailPage, ReservationsListPage } from './ReservationsPages
 import { ArticleFormPage, ArticlesListPage } from './ArticlesPages.jsx';
 import { QuoteDetailPage, QuotesListPage } from './QuotesPages.jsx';
 import { VehicleFormPage, VehiclesListPage } from './VehiclesPages.jsx';
+import { TeamPage } from './TeamPage.jsx';
+import { AnalyticsPage } from './AnalyticsPage.jsx';
 
-/** @typedef {'dashboard' | 'login' | 'reservations' | 'reservation-detail' | 'quotes' | 'quote-detail' | 'vehicles' | 'vehicle-form' | 'articles' | 'article-form' | 'fleet' | 'dispatch' | 'corporate' | 'unknown'} AdminPage */
+/** @typedef {'dashboard' | 'login' | 'reservations' | 'reservation-detail' | 'quotes' | 'quote-detail' | 'vehicles' | 'vehicle-form' | 'articles' | 'article-form' | 'fleet' | 'dispatch' | 'corporate' | 'analytics' | 'team' | 'unknown'} AdminPage */
 /** @typedef {'loading' | 'ready' | 'denied'} AuthStatus */
 
 /**
@@ -88,6 +92,8 @@ export function parseAdminRoute(pathname) {
   if (rest[0] === 'fleet') return { page: 'fleet', path: '/admin/fleet' };
   if (rest[0] === 'dispatch') return { page: 'dispatch', path: '/admin/dispatch' };
   if (rest[0] === 'corporate') return { page: 'corporate', path: '/admin/corporate' };
+  if (rest[0] === 'analytics') return { page: 'analytics', path: '/admin/analytics' };
+  if (rest[0] === 'team') return { page: 'team', path: '/admin/team' };
   return { page: 'unknown', path: pathname };
 }
 
@@ -139,6 +145,23 @@ function AdminLink({ href, children, className = '', onClick, ...props }) {
       {children}
     </a>
   );
+}
+
+function AdminRouteTransition({ routeKey }) {
+  const [visible, setVisible] = React.useState(false);
+  const firstRoute = React.useRef(true);
+
+  React.useEffect(() => {
+    if (firstRoute.current) {
+      firstRoute.current = false;
+      return undefined;
+    }
+    setVisible(true);
+    const timer = window.setTimeout(() => setVisible(false), 260);
+    return () => window.clearTimeout(timer);
+  }, [routeKey]);
+
+  return visible ? <div className="admin-route-transition" aria-hidden="true"><span>V</span></div> : null;
 }
 
 function LocaleToggle({ locale, onLocale, id }) {
@@ -196,8 +219,11 @@ function AdminShell({ page, title, user, locale, onLocale, onLogout, children })
     { id: 'articles', group: 'catalog', href: '/admin/articles', label: copy.nav.articles, icon: FileText },
     { id: 'fleet', group: 'operations', href: '/admin/fleet', label: copy.nav.fleet, icon: Gauge },
     { id: 'dispatch', group: 'operations', href: '/admin/dispatch', label: copy.nav.dispatch, icon: Route },
+    { id: 'analytics', group: 'operations', href: '/admin/analytics', label: copy.nav.analytics, icon: BarChart3 },
     { id: 'corporate', group: 'relationships', href: '/admin/corporate', label: copy.nav.corporate, icon: Building2 },
+    { id: 'team', group: 'relationships', href: '/admin/team', label: copy.nav.team, icon: UsersRound },
   ];
+  const visibleNav = NAV.filter((item) => item.id !== 'team' || user?.role === 'admin');
 
   React.useEffect(() => {
     setNavOpen(false);
@@ -214,6 +240,7 @@ function AdminShell({ page, title, user, locale, onLocale, onLogout, children })
 
   return (
     <div className={`admin-shell${navOpen ? ' admin-shell--nav-open' : ''}`}>
+      <AdminRouteTransition routeKey={page} />
       {navOpen ? (
         <button
           type="button"
@@ -231,7 +258,7 @@ function AdminShell({ page, title, user, locale, onLocale, onLogout, children })
           {['workflow', 'catalog', 'operations', 'relationships'].map((group) => (
             <div className="admin-nav-group" key={group}>
               <p className="admin-nav-group__label">{copy.navGroups[group]}</p>
-              {NAV.filter((item) => item.group === group).map((item) => {
+              {visibleNav.filter((item) => item.group === group).map((item) => {
                 const Icon = item.icon;
                 return (
                   <AdminLink
@@ -449,6 +476,10 @@ export function AdminApp({ pathname }) {
                   ? `${copy.dispatch.title} | VIPCAR Ops`
                   : page === 'corporate'
                     ? `${copy.corporate.title} | VIPCAR Ops`
+                    : page === 'analytics'
+                      ? `${copy.analytics.title} | VIPCAR Ops`
+                      : page === 'team'
+                        ? `${copy.team.title} | VIPCAR Ops`
                     : `${pageTitle(page, copy)} | VIPCAR Ops`;
     document.documentElement.lang = locale;
 
@@ -576,6 +607,10 @@ export function AdminApp({ pathname }) {
               ? copy.dispatch.title
               : page === 'corporate'
                 ? copy.corporate.title
+                : page === 'analytics'
+                  ? copy.analytics.title
+                  : page === 'team'
+                    ? copy.team.title
                 : pageTitle(page, copy);
 
   return (
@@ -628,6 +663,8 @@ export function AdminApp({ pathname }) {
         {page === 'fleet' ? <FleetPage locale={locale} copy={copy} /> : null}
         {page === 'dispatch' ? <DispatchPage locale={locale} copy={copy} /> : null}
         {page === 'corporate' ? <CorporatePage locale={locale} copy={copy} /> : null}
+        {page === 'analytics' ? <AnalyticsPage locale={locale} copy={copy} /> : null}
+        {page === 'team' ? <TeamPage locale={locale} copy={copy} /> : null}
         {page === 'unknown' ? (
           <>
             <p className="admin-muted">{copy.stubs.unknown}</p>
@@ -655,6 +692,8 @@ function pageTitle(page, copy) {
   if (page === 'fleet') return copy.fleet.title;
   if (page === 'dispatch') return copy.dispatch.title;
   if (page === 'corporate') return copy.corporate.title;
+  if (page === 'analytics') return copy.analytics.title;
+  if (page === 'team') return copy.team.title;
   return 'Admin';
 }
 

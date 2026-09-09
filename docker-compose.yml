@@ -269,6 +269,34 @@ services:
       timeout: 5s
       retries: 12
 
+  analytics:
+    build:
+      context: .
+      dockerfile: apps/analytics/Dockerfile
+    environment:
+      DATABASE_PROVIDER: postgresql
+      DATABASE_URL: postgresql://vipcar:vipcar@postgres:5432/vipcar?schema=analytics
+      NATS_URL: nats://nats:4222
+      ANALYTICS_HTTP_PORT: 3009
+    ports:
+      - "3009:3009"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      nats:
+        condition: service_started
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3009/health').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
   gateway:
     build:
       context: .
@@ -292,6 +320,8 @@ services:
       billing:
         condition: service_healthy
       dispatch:
+        condition: service_healthy
+      analytics:
         condition: service_healthy
       nats:
         condition: service_started

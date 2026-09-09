@@ -3,6 +3,7 @@
  * Server-side emitters use the same names so logs and future pipelines stay compatible.
  */
 export const ANALYTICS_EVENTS = {
+  pageView: 'page_view',
   phoneClick: 'phone_click',
   whatsappClick: 'whatsapp_click',
   emailClick: 'email_click',

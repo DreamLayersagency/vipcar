@@ -4,7 +4,13 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { RpcException } from '@nestjs/microservices';
 import type { User } from '../../generated/prisma';
-import type { AuthResultDto, LoginDto, PublicUserDto, RegisterDto } from '@vipcar/contracts';
+import type {
+  AuthResultDto,
+  CreateStaffUserDto,
+  LoginDto,
+  PublicUserDto,
+  RegisterDto,
+} from '@vipcar/contracts';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma.service';
 
@@ -50,6 +56,36 @@ export class AuthService {
     }
 
     return this.issueTokens(user);
+  }
+
+  async createStaff(dto: CreateStaffUserDto): Promise<PublicUserDto> {
+    const email = dto.email.trim().toLowerCase();
+    const existing = await this.prisma.user.findUnique({ where: { email } });
+    if (existing) {
+      throw new RpcException({ code: 'EMAIL_TAKEN', message: 'Email already registered', status: 409 });
+    }
+
+    const passwordHash = await bcrypt.hash(dto.password, 12);
+    const user = await this.prisma.user.create({
+      data: {
+        email,
+        passwordHash,
+        name: dto.name.trim(),
+        phone: dto.phone?.trim() || null,
+        locale: dto.locale ?? 'en',
+        role: 'ops_agent',
+      },
+    });
+
+    return toPublicUser(user);
+  }
+
+  async listStaff(): Promise<PublicUserDto[]> {
+    const users = await this.prisma.user.findMany({
+      where: { role: { in: ['ops_agent', 'admin'] } },
+      orderBy: { createdAt: 'desc' },
+    });
+    return users.map(toPublicUser);
   }
 
   async refresh(refreshToken: string): Promise<AuthResultDto> {

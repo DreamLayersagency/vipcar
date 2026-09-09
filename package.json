@@ -18,6 +18,7 @@
     "dev:fleet": "npm run start:dev -w @vipcar/fleet",
     "dev:billing": "npm run start:dev -w @vipcar/billing",
     "dev:dispatch": "npm run start:dev -w @vipcar/dispatch",
+    "dev:analytics": "npm run start:dev -w @vipcar/analytics",
     "build:contracts": "npm run build -w @vipcar/contracts",
     "build:gateway": "npm run build -w @vipcar/gateway",
     "build:identity": "npm run build -w @vipcar/identity",
@@ -28,6 +29,7 @@
     "build:fleet": "npm run build -w @vipcar/fleet",
     "build:billing": "npm run build -w @vipcar/billing",
     "build:dispatch": "npm run build -w @vipcar/dispatch",
+    "build:analytics": "npm run build -w @vipcar/analytics",
     "build:web": "npm run build -w @vipcar/web",
     "build:admin": "npm run build:web",
     "prisma:identity:generate": "node scripts/prisma.cjs --app identity generate",
@@ -57,6 +59,9 @@
     "prisma:dispatch:generate": "node scripts/prisma.cjs --app dispatch generate",
     "prisma:dispatch:migrate": "node scripts/prisma.cjs --app dispatch migrate",
     "prisma:dispatch:deploy": "node scripts/prisma.cjs --app dispatch deploy",
+    "prisma:analytics:generate": "node scripts/prisma.cjs --app analytics generate",
+    "prisma:analytics:migrate": "node scripts/prisma.cjs --app analytics migrate",
+    "prisma:analytics:deploy": "node scripts/prisma.cjs --app analytics deploy",
     "test:e2e:auth": "npm run test:e2e -w @vipcar/gateway",
     "postinstall": "npm run build -w @vipcar/contracts"
   }

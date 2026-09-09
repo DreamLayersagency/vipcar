@@ -1,11 +1,15 @@
 import 'reflect-metadata';
 import { BadRequestException, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  // Vehicle images are sent as bounded data URLs by the local admin uploader.
+  // Keep the limit explicit and bounded while allowing a practical 2.5 MB source image.
+  app.useBodyParser('json', { limit: '5mb' });
   app.setGlobalPrefix('v1');
   app.useGlobalPipes(
     new ValidationPipe({

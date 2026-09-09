@@ -10,6 +10,8 @@ export const NATS_PATTERNS = {
       corporateAccountList: 'identity.admin.corporateAccount.list',
       corporateAccountCreate: 'identity.admin.corporateAccount.create',
       corporateAccountLinkManager: 'identity.admin.corporateAccount.linkManager',
+      staffUserList: 'identity.admin.staffUser.list',
+      staffUserCreate: 'identity.admin.staffUser.create',
     },
   },
   catalog: {
@@ -113,5 +115,10 @@ export const NATS_PATTERNS = {
     trip: {
       status: 'dispatch.trip.status',
     },
+  },
+  analytics: {
+    health: 'analytics.health',
+    eventTrack: 'analytics.event.track',
+    summary: 'analytics.summary.get',
   },
 } as const;

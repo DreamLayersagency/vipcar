@@ -21,6 +21,8 @@ import { ContactModule } from './contact/contact.module';
 import { QuotesModule } from './quotes/quotes.module';
 import { BookingsModule } from './bookings/bookings.module';
 import { MeModule } from './me/me.module';
+import { AnalyticsClientModule } from './analytics-client.module';
+import { AnalyticsModule } from './analytics/analytics.module';
 
 @Module({
   imports: [
@@ -45,6 +47,7 @@ import { MeModule } from './me/me.module';
     FleetClientModule,
     BillingClientModule,
     DispatchClientModule,
+    AnalyticsClientModule,
     AuthModule,
     CatalogModule,
     CmsModule,
@@ -53,6 +56,7 @@ import { MeModule } from './me/me.module';
     MeModule,
     BillingModule,
     ContactModule,
+    AnalyticsModule,
     OpsModule,
   ],
   controllers: [HealthController],

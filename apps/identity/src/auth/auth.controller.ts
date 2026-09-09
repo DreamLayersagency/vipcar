@@ -6,6 +6,7 @@ import {
   NATS_PATTERNS,
   RefreshDto,
   RegisterDto,
+  CreateStaffUserDto,
 } from '@vipcar/contracts';
 import { AuthService } from './auth.service';
 
@@ -26,6 +27,16 @@ export class AuthController {
   @MessagePattern(NATS_PATTERNS.identity.login)
   login(@Payload() dto: LoginDto) {
     return this.auth.login(dto);
+  }
+
+  @MessagePattern(NATS_PATTERNS.identity.admin.staffUserCreate)
+  createStaff(@Payload() dto: CreateStaffUserDto) {
+    return this.auth.createStaff(dto);
+  }
+
+  @MessagePattern(NATS_PATTERNS.identity.admin.staffUserList)
+  listStaff() {
+    return this.auth.listStaff();
   }
 
   @MessagePattern(NATS_PATTERNS.identity.refresh)

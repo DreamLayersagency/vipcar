@@ -22,6 +22,28 @@ export class RegisterDto {
   locale?: 'en' | 'fr' | 'ar';
 }
 
+/** Admin-only staff account creation. The role is intentionally not client-controlled. */
+export class CreateStaffUserDto {
+  @IsEmail()
+  email!: string;
+
+  @IsString()
+  @MinLength(8)
+  password!: string;
+
+  @IsString()
+  @MinLength(1)
+  name!: string;
+
+  @IsOptional()
+  @IsString()
+  phone?: string;
+
+  @IsOptional()
+  @IsIn(['en', 'fr', 'ar'])
+  locale?: 'en' | 'fr' | 'ar';
+}
+
 export class LoginDto {
   @IsEmail()
   email!: string;

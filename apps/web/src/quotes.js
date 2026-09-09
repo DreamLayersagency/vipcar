@@ -4,7 +4,7 @@ import { apiWithAuth } from './auth.js';
 /**
  * Persist a public quote via the gateway.
  * @param {Record<string, unknown>} body CreateQuoteHttpDto fields
- * @param {{ locale?: 'en' | 'fr', signal?: AbortSignal, token?: string | null }} [options]
+ * @param {{ locale?: 'en' | 'fr' | 'ar', signal?: AbortSignal, token?: string | null }} [options]
  * @returns {Promise<{ data: unknown }>}
  */
 export async function createQuote(body, options = {}) {
@@ -31,25 +31,38 @@ export function formatQuoteReference(id) {
 /**
  * User-facing message from an API / network failure (form stays filled).
  * @param {unknown} error
- * @param {'en' | 'fr'} lang
+ * @param {'en' | 'fr' | 'ar'} lang
  */
 export function quoteErrorMessage(error, lang) {
   if (error instanceof ApiError) {
     if (error.status === 0 || error.code === 'API_URL_MISSING') {
       return lang === 'en'
         ? 'Quote service is not configured. Please try WhatsApp or call us.'
-        : 'Le service de devis n’est pas configuré. Écrivez-nous sur WhatsApp ou appelez-nous.';
+        : lang === 'ar'
+          ? 'خدمة عروض الأسعار غير مهيأة. جرّب واتساب أو اتصل بنا.'
+          : 'Le service de devis n’est pas configuré. Écrivez-nous sur WhatsApp ou appelez-nous.';
+    }
+    if (error.code === 'SERVICE_UNAVAILABLE' || error.status >= 500) {
+      return lang === 'en'
+        ? 'The quote service is temporarily unavailable. Please retry in a moment or contact us on WhatsApp.'
+        : lang === 'ar'
+          ? 'خدمة عروض الأسعار غير متاحة مؤقتاً. أعد المحاولة بعد قليل أو تواصل معنا عبر واتساب.'
+          : 'Le service de devis est temporairement indisponible. Réessayez dans un instant ou contactez-nous sur WhatsApp.';
     }
     if (error.status >= 400 && error.status < 500) {
       return error.message
         || (lang === 'en'
           ? 'Please check your details and try again.'
-          : 'Vérifiez vos informations et réessayez.');
+          : lang === 'ar'
+            ? 'تحقق من معلوماتك ثم أعد المحاولة.'
+            : 'Vérifiez vos informations et réessayez.');
     }
   }
   return lang === 'en'
     ? 'We could not save your quote. Please try again in a moment.'
-    : 'Impossible d’enregistrer votre devis. Réessayez dans un instant.';
+    : lang === 'ar'
+      ? 'تعذر حفظ عرض السعر. أعد المحاولة بعد قليل.'
+      : 'Impossible d’enregistrer votre devis. Réessayez dans un instant.';
 }
 
 /**

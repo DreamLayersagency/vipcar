@@ -3,6 +3,7 @@ export type { StaffRole } from './roles';
 export { NATS_PATTERNS } from './nats-patterns';
 export {
   RegisterDto,
+  CreateStaffUserDto,
   LoginDto,
   RefreshDto,
   LogoutDto,
@@ -173,3 +174,5 @@ export type {
 export { DOMAIN_EVENTS } from './events';
 export { ANALYTICS_EVENTS } from './analytics';
 export type { AnalyticsEventName } from './analytics';
+export { TrackAnalyticsEventDto, AnalyticsSummaryQueryDto } from './analytics.dto';
+export type { AnalyticsDailyPoint, AnalyticsSummary } from './analytics.dto';

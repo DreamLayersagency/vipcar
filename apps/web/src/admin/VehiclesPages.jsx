@@ -63,6 +63,23 @@ function SuccessBanner({ message }) {
   );
 }
 
+const MAX_VEHICLE_IMAGE_BYTES = 2.5 * 1024 * 1024;
+
+function readVehicleImage(file, onDone, onError) {
+  if (!file?.type?.startsWith('image/')) {
+    onError('type');
+    return;
+  }
+  if (file.size > MAX_VEHICLE_IMAGE_BYTES) {
+    onError('size');
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = () => onDone(String(reader.result || ''));
+  reader.onerror = () => onError('read');
+  reader.readAsDataURL(file);
+}
+
 function TableSkeleton() {
   return (
     <div className="admin-table-wrap" aria-hidden="true">
@@ -360,6 +377,8 @@ export function VehicleFormPage({ slug, locale, copy, navigate }) {
   const [saving, setSaving] = React.useState(false);
   const [error, setError] = React.useState('');
   const [success, setSuccess] = React.useState('');
+  const [imagePreview, setImagePreview] = React.useState('');
+  const [imageError, setImageError] = React.useState('');
   const [slugLocked, setSlugLocked] = React.useState(!isNew);
   const [slugTouched, setSlugTouched] = React.useState(false);
 
@@ -370,6 +389,8 @@ export function VehicleFormPage({ slug, locale, copy, navigate }) {
       setLoadFailed(false);
       setError('');
       setSuccess('');
+      setImagePreview('');
+      setImageError('');
       setFieldErrors({});
       setSlugLocked(false);
       setSlugTouched(false);
@@ -385,6 +406,8 @@ export function VehicleFormPage({ slug, locale, copy, navigate }) {
       .then((vehicle) => {
         if (controller.signal.aborted) return;
         setForm(vehicleToForm(vehicle));
+        setImagePreview(String(vehicle.imageKey || '').startsWith('data:image/') ? vehicle.imageKey : '');
+        setImageError('');
         setSlugLocked(true);
       })
       .catch((err) => {
@@ -415,6 +438,36 @@ export function VehicleFormPage({ slug, locale, copy, navigate }) {
       return next;
     });
     setSuccess('');
+    if (key === 'imageKey' && !String(value || '').startsWith('data:image/')) {
+      setImagePreview('');
+    }
+  };
+
+  const handleImageFile = (file) => {
+    if (saving) return;
+    setImageError('');
+    readVehicleImage(
+      file,
+      (dataUrl) => {
+        setImagePreview(dataUrl);
+        setField('imageKey', dataUrl);
+      },
+      (reason) => {
+        setImageError(
+          reason === 'size'
+            ? v.imageSizeError
+            : reason === 'type'
+              ? v.imageTypeError
+              : v.imageReadError,
+        );
+      },
+    );
+  };
+
+  const handleImageDrop = (event) => {
+    event.preventDefault();
+    if (saving) return;
+    handleImageFile(event.dataTransfer.files?.[0]);
   };
 
   const submit = async (e) => {
@@ -458,6 +511,8 @@ export function VehicleFormPage({ slug, locale, copy, navigate }) {
       setSaving(false);
     }
   };
+
+  const hasUploadedImage = String(form.imageKey || '').startsWith('data:image/');
 
   if (loading) {
     return (
@@ -681,25 +736,70 @@ export function VehicleFormPage({ slug, locale, copy, navigate }) {
               )}
             </label>
 
-            <label className={`admin-field ${fieldErrors.imageKey ? 'admin-field--invalid' : ''}`}>
-              <span>{v.fields.imageKey}</span>
-              <input
-                name="imageKey"
-                value={form.imageKey}
-                onChange={(e) => setField('imageKey', e.target.value)}
-                disabled={saving}
-                autoComplete="off"
-                spellCheck={false}
-                placeholder="fleet-example.png"
-              />
-              {fieldErrors.imageKey ? (
-                <span className="admin-field__error" role="alert">
-                  {fieldErrorMessage(fieldErrors, 'imageKey', v)}
-                </span>
-              ) : (
-                <span className="admin-field__hint">{v.imageHint}</span>
-              )}
-            </label>
+            <div className={`admin-image-uploader ${fieldErrors.imageKey || imageError ? 'admin-image-uploader--invalid' : ''}`}>
+              <div
+                className={`admin-image-dropzone${imagePreview ? ' admin-image-dropzone--has-preview' : ''}`}
+                onDragOver={(event) => {
+                  event.preventDefault();
+                  if (!saving) event.dataTransfer.dropEffect = 'copy';
+                }}
+                onDrop={handleImageDrop}
+              >
+                {imagePreview ? (
+                  <img src={imagePreview} alt={v.imagePreviewAlt} />
+                ) : (
+                  <span className="admin-image-dropzone__icon" aria-hidden="true">↥</span>
+                )}
+                <div className="admin-image-dropzone__copy">
+                  <strong>{v.imageDropTitle}</strong>
+                  <span>{v.imageDropHint}</span>
+                </div>
+                <label className="admin-btn admin-btn--ghost admin-image-browse" htmlFor="vehicle-image-input">
+                  {v.imageBrowse}
+                </label>
+                <input
+                  id="vehicle-image-input"
+                  className="admin-image-input"
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp"
+                  onChange={(event) => handleImageFile(event.target.files?.[0])}
+                  disabled={saving}
+                />
+              </div>
+              {imagePreview ? (
+                <button
+                  type="button"
+                  className="admin-image-remove"
+                  onClick={() => {
+                    setImagePreview('');
+                    setField('imageKey', '');
+                  }}
+                  disabled={saving}
+                >
+                  {v.imageRemove}
+                </button>
+              ) : null}
+              <label className={`admin-field ${fieldErrors.imageKey ? 'admin-field--invalid' : ''}`}>
+                <span>{v.fields.imageKey}</span>
+                <input
+                  name="imageKey"
+                  value={hasUploadedImage ? v.imageDataSelected : form.imageKey}
+                  onChange={(e) => setField('imageKey', e.target.value)}
+                  disabled={saving || hasUploadedImage}
+                  autoComplete="off"
+                  spellCheck={false}
+                  placeholder="fleet-example.png"
+                />
+                {fieldErrors.imageKey ? (
+                  <span className="admin-field__error" role="alert">
+                    {fieldErrorMessage(fieldErrors, 'imageKey', v)}
+                  </span>
+                ) : (
+                  <span className="admin-field__hint">{v.imageHint}</span>
+                )}
+              </label>
+              {imageError ? <span className="admin-field__error" role="alert">{imageError}</span> : null}
+            </div>
 
             <label
               className={`admin-field admin-form-grid__full ${fieldErrors.defaultHubId ? 'admin-field--invalid' : ''}`}
