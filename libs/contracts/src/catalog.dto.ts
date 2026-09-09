@@ -162,7 +162,7 @@ export class VehicleModelDto {
   isPublished!: boolean;
 }
 
-export const LOCALES = ['en', 'fr'] as const;
+export const LOCALES = ['en', 'fr', 'ar'] as const;
 export type LocaleLabel = (typeof LOCALES)[number];
 
 export const LOCATION_TYPES = ['city', 'airport', 'hotel', 'other'] as const;
@@ -178,7 +178,7 @@ export class ListLocationsDto {
 export class LocationDto {
   id!: string;
   slug!: string;
-  /** Localized via Accept-Language (en|fr). */
+  /** Localized via Accept-Language (en|fr|ar). */
   name!: string;
   type!: LocationTypeLabel;
   airportName!: string | null;

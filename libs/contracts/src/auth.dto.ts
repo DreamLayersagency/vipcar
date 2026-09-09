@@ -18,8 +18,8 @@ export class RegisterDto {
   phone?: string;
 
   @IsOptional()
-  @IsIn(['en', 'fr'])
-  locale?: 'en' | 'fr';
+  @IsIn(['en', 'fr', 'ar'])
+  locale?: 'en' | 'fr' | 'ar';
 }
 
 export class LoginDto {

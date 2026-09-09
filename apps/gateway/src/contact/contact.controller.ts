@@ -60,11 +60,12 @@ export class ContactController {
   }
 }
 
-/** Accept-Language: en | fr (default en). Honors primary tag only. */
+/** Accept-Language: en | fr | ar (default en). Honors primary tag only. */
 function resolveLocale(header?: string): LocaleLabel {
   if (!header) return 'en';
   const primary = header.split(',')[0]?.trim().toLowerCase() ?? '';
-  return primary.startsWith('fr') ? 'fr' : 'en';
+  if (primary.startsWith('fr')) return 'fr';
+  return primary.startsWith('ar') ? 'ar' : 'en';
 }
 
 function mapRpcError(error: unknown): HttpException {

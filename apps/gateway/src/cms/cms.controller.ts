@@ -98,10 +98,11 @@ function resolveLocale(
   queryLocale?: string,
   acceptLanguage?: string,
 ): LocaleLabel {
-  if (queryLocale === 'fr' || queryLocale === 'en') return queryLocale;
+  if (queryLocale === 'fr' || queryLocale === 'en' || queryLocale === 'ar') return queryLocale;
   if (!acceptLanguage) return 'en';
   const primary = acceptLanguage.split(',')[0]?.trim().toLowerCase() ?? '';
-  return primary.startsWith('fr') ? 'fr' : 'en';
+  if (primary.startsWith('fr')) return 'fr';
+  return primary.startsWith('ar') ? 'ar' : 'en';
 }
 
 function mapCmsError(error: unknown): HttpException {

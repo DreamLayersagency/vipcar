@@ -106,7 +106,7 @@ export class ArticleSectionInputDto {
 export class ArticleDto {
   id!: string;
   slug!: string;
-  /** Localized via locale / Accept-Language (en|fr). */
+  /** Localized via locale / Accept-Language (en|fr|ar). */
   title!: string;
   summary!: string;
   sections!: ArticleSectionDto[];

@@ -45,6 +45,12 @@ const COPY = {
     signOut: 'Sign out',
     checkingSession: 'Checking staff session…',
     redirectingSignIn: 'Redirecting to sign in…',
+    navGroups: {
+      workflow: 'Workflow',
+      catalog: 'Catalog',
+      operations: 'Operations',
+      relationships: 'Relationships',
+    },
     nav: {
       dashboard: 'Dashboard',
       reservations: 'Reservations',
@@ -207,6 +213,7 @@ const COPY = {
       empty: 'No quotes match this filter.',
       loading: 'Loading quotes…',
       error: 'Could not load quotes.',
+      unavailable: 'The booking service is temporarily unavailable. Please try again in a moment.',
       retry: 'Try again',
       page: 'Page',
       of: 'of',
@@ -604,6 +611,12 @@ const COPY = {
     signOut: 'Déconnexion',
     checkingSession: 'Vérification de la session…',
     redirectingSignIn: 'Redirection vers la connexion…',
+    navGroups: {
+      workflow: 'Flux de réservation',
+      catalog: 'Catalogue',
+      operations: 'Opérations',
+      relationships: 'Relations',
+    },
     nav: {
       dashboard: 'Tableau de bord',
       reservations: 'Réservations',
@@ -766,6 +779,7 @@ const COPY = {
       empty: 'Aucun devis pour ce filtre.',
       loading: 'Chargement des devis…',
       error: 'Impossible de charger les devis.',
+      unavailable: 'Le service de réservation est temporairement indisponible. Réessayez dans un instant.',
       retry: 'Réessayer',
       page: 'Page',
       of: 'sur',

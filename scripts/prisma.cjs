@@ -72,27 +72,44 @@ if (operation !== 'seed') {
 }
 prismaArgs.push(...extraArgs);
 
-const child = spawn(
-  operation === 'seed'
-    ? process.execPath
-    : process.platform === 'win32'
-      ? 'npx.cmd'
-      : 'npx',
-  operation === 'seed' ? ['prisma/seed.cjs', ...extraArgs] : prismaArgs,
-  {
-    cwd: appRoot,
-    env: process.env,
-    stdio: 'inherit',
-    shell: process.platform === 'win32' && operation !== 'seed',
-  },
-);
+const npmCommand = process.platform === 'win32' ? 'npx.cmd' : 'npx';
+const childOptions = {
+  cwd: appRoot,
+  env: process.env,
+  stdio: 'inherit',
+  shell: process.platform === 'win32',
+};
+const nodeOptions = { ...childOptions, shell: false };
 
-child.on('exit', (code, signal) => {
+function finish(code, signal) {
   if (signal) {
     process.kill(process.pid, signal);
   }
   process.exit(code ?? 1);
-});
+}
+
+function runSeed() {
+  const child = spawn(process.execPath, ['prisma/seed.cjs', ...extraArgs], nodeOptions);
+  child.on('exit', finish);
+}
+
+if (operation === 'seed') {
+  // Always regenerate against the active provider before loading the seed.
+  // This keeps local SQLite clients from retaining a PostgreSQL datasource.
+  const generate = spawn(npmCommand, ['prisma', 'generate', '--schema', schemaPath], childOptions);
+  generate.on('exit', (code, signal) => {
+    if (signal) {
+      process.kill(process.pid, signal);
+    }
+    if ((code ?? 1) !== 0) {
+      process.exit(code ?? 1);
+    }
+    runSeed();
+  });
+} else {
+  const child = spawn(npmCommand, prismaArgs, childOptions);
+  child.on('exit', finish);
+}
 
 function createSqliteSchema(service) {
   const sourcePath = resolve(root, 'apps', service, 'prisma', 'schema.prisma');

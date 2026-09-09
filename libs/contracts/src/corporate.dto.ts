@@ -84,8 +84,8 @@ export class LinkCorporateManagerDto {
   phone?: string;
 
   @IsOptional()
-  @IsIn(['en', 'fr'])
-  locale?: 'en' | 'fr';
+  @IsIn(['en', 'fr', 'ar'])
+  locale?: 'en' | 'fr' | 'ar';
 }
 
 /** HTTP body for invite/link (account id comes from the path). */
@@ -113,8 +113,8 @@ export class LinkCorporateManagerHttpDto {
   phone?: string;
 
   @IsOptional()
-  @IsIn(['en', 'fr'])
-  locale?: 'en' | 'fr';
+  @IsIn(['en', 'fr', 'ar'])
+  locale?: 'en' | 'fr' | 'ar';
 }
 
 export class CorporateManagerDto {

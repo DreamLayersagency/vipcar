@@ -116,12 +116,24 @@ export class OpsQuotesController {
 
 function mapBookingError(error: unknown): HttpException {
   const rpc = unwrapRpc(error);
-  const status = typeof rpc.status === 'number' ? rpc.status : 502;
-  const code = typeof rpc.code === 'string' ? rpc.code : 'BOOKING_ERROR';
-  const message =
+  const rawMessage =
     typeof rpc.message === 'string' ? rpc.message : 'Booking service error';
+  const unavailable = isUnavailableMessage(rawMessage);
+  const status = unavailable ? 503 : typeof rpc.status === 'number' ? rpc.status : 502;
+  const code = unavailable
+    ? 'SERVICE_UNAVAILABLE'
+    : typeof rpc.code === 'string'
+      ? rpc.code
+      : 'BOOKING_ERROR';
+  const message = unavailable
+    ? 'The booking service is temporarily unavailable. Please try again in a moment.'
+    : rawMessage;
   const details = Array.isArray(rpc.details) ? rpc.details : [];
   return new HttpException({ error: { code, message, details } }, status);
+}
+
+function isUnavailableMessage(message: string): boolean {
+  return /no subscribers listening|empty response/i.test(message);
 }
 
 function unwrapRpc(error: unknown): {

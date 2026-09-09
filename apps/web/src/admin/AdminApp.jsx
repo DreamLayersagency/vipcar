@@ -1,6 +1,16 @@
 import React from 'react';
 import { ApiError, apiBaseUrl } from '../api';
 import {
+  Building2,
+  Car,
+  ClipboardList,
+  FileText,
+  Gauge,
+  Inbox,
+  LayoutDashboard,
+  Route,
+} from 'lucide-react';
+import {
   clearSession,
   getAccessToken,
   getStoredUser,
@@ -179,14 +189,14 @@ function AdminShell({ page, title, user, locale, onLocale, onLogout, children })
           ? 'articles'
           : page;
   const NAV = [
-    { id: 'dashboard', href: '/admin', label: copy.nav.dashboard },
-    { id: 'reservations', href: '/admin/reservations', label: copy.nav.reservations },
-    { id: 'quotes', href: '/admin/quotes', label: copy.nav.quotes },
-    { id: 'vehicles', href: '/admin/vehicles', label: copy.nav.vehicles },
-    { id: 'articles', href: '/admin/articles', label: copy.nav.articles },
-    { id: 'fleet', href: '/admin/fleet', label: copy.nav.fleet },
-    { id: 'dispatch', href: '/admin/dispatch', label: copy.nav.dispatch },
-    { id: 'corporate', href: '/admin/corporate', label: copy.nav.corporate },
+    { id: 'dashboard', group: 'workflow', href: '/admin', label: copy.nav.dashboard, icon: LayoutDashboard },
+    { id: 'reservations', group: 'workflow', href: '/admin/reservations', label: copy.nav.reservations, icon: ClipboardList },
+    { id: 'quotes', group: 'workflow', href: '/admin/quotes', label: copy.nav.quotes, icon: Inbox },
+    { id: 'vehicles', group: 'catalog', href: '/admin/vehicles', label: copy.nav.vehicles, icon: Car },
+    { id: 'articles', group: 'catalog', href: '/admin/articles', label: copy.nav.articles, icon: FileText },
+    { id: 'fleet', group: 'operations', href: '/admin/fleet', label: copy.nav.fleet, icon: Gauge },
+    { id: 'dispatch', group: 'operations', href: '/admin/dispatch', label: copy.nav.dispatch, icon: Route },
+    { id: 'corporate', group: 'relationships', href: '/admin/corporate', label: copy.nav.corporate, icon: Building2 },
   ];
 
   React.useEffect(() => {
@@ -218,15 +228,26 @@ function AdminShell({ page, title, user, locale, onLocale, onLogout, children })
           <span>Ops</span>
         </div>
         <nav className="admin-nav" aria-label="Staff navigation">
-          {NAV.map((item) => (
-            <AdminLink
-              key={item.id}
-              href={item.href}
-              aria-current={navPage === item.id ? 'page' : undefined}
-              onClick={() => setNavOpen(false)}
-            >
-              {item.label}
-            </AdminLink>
+          {['workflow', 'catalog', 'operations', 'relationships'].map((group) => (
+            <div className="admin-nav-group" key={group}>
+              <p className="admin-nav-group__label">{copy.navGroups[group]}</p>
+              {NAV.filter((item) => item.group === group).map((item) => {
+                const Icon = item.icon;
+                return (
+                  <AdminLink
+                    key={item.id}
+                    href={item.href}
+                    aria-current={navPage === item.id ? 'page' : undefined}
+                    onClick={() => setNavOpen(false)}
+                  >
+                    <span className="admin-nav__icon" aria-hidden="true">
+                      <Icon size={16} strokeWidth={1.8} />
+                    </span>
+                    <span>{item.label}</span>
+                  </AdminLink>
+                );
+              })}
+            </div>
           ))}
         </nav>
       </aside>

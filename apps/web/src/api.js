@@ -85,10 +85,18 @@ export async function api(path, options = {}) {
 
   if (!response.ok) {
     const err = payload?.error;
+    const rawMessage = err?.message ?? `Request failed (${response.status})`;
+    const serviceUnavailable =
+      err?.code === 'SERVICE_UNAVAILABLE' ||
+      (typeof rawMessage === 'string' && /no subscribers listening|empty response/i.test(rawMessage));
     throw new ApiError({
-      status: response.status,
-      code: err?.code ?? 'HTTP_ERROR',
-      message: err?.message ?? `Request failed (${response.status})`,
+      status: serviceUnavailable ? 503 : response.status,
+      code: serviceUnavailable ? 'SERVICE_UNAVAILABLE' : err?.code ?? 'HTTP_ERROR',
+      message: serviceUnavailable
+        ? locale === 'fr'
+          ? 'Un service requis est temporairement indisponible. Réessayez dans un instant.'
+          : 'A required service is temporarily unavailable. Please try again in a moment.'
+        : rawMessage,
       details: err?.details ?? [],
     });
   }

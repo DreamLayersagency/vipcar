@@ -32,6 +32,7 @@ enum Channel {
 enum Locale {
   en
   fr
+  ar
 }
 
 enum ChauffeurDuration {

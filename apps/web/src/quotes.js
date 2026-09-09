@@ -65,6 +65,7 @@ export function quoteErrorMessage(error, lang) {
  *   notes?: string,
  *   duration?: string,
  *   passengers?: number | string,
+ *   flightNumber?: string,
  *   vehicleName?: string,
  *   dropoff?: string,
  * }} fields
@@ -81,6 +82,7 @@ export function buildWhatsAppQuoteMessage(fields) {
       : `Date: ${fields.startDate}.`,
     fields.duration ? `Duration: ${fields.duration}.` : null,
     fields.passengers ? `Passengers: ${fields.passengers}.` : null,
+    fields.flightNumber ? `Flight number: ${fields.flightNumber}.` : null,
     `Name: ${fields.name}.`,
     `Phone: ${fields.phone}.`,
     fields.email ? `Email: ${fields.email}.` : null,

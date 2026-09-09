@@ -129,9 +129,12 @@ export async function loadVehiclePage(slug, options = {}) {
 
 /**
  * Soft notice when showing bundled seed (not a hard error UI).
- * @param {'en' | 'fr'} lang
+ * @param {'en' | 'fr' | 'ar'} lang
  */
 export function fleetOfflineMessage(lang) {
+  if (lang === 'ar') {
+    return 'الكتالوج المباشر غير متاح مؤقتاً. نعرض الأسطول المحفوظ؛ الأسعار إرشادية حتى التأكيد.';
+  }
   return lang === 'en'
     ? 'Live catalog is temporarily unavailable. Showing cached fleet; prices remain indicative until confirmed.'
     : 'Le catalogue en direct est temporairement indisponible. Affichage de la flotte en cache ; tarifs indicatifs jusqu’à confirmation.';

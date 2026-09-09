@@ -318,33 +318,43 @@ export async function logout(options = {}) {
 
 /**
  * @param {unknown} error
- * @param {'en' | 'fr'} lang
+ * @param {'en' | 'fr' | 'ar'} lang
  */
 export function loginErrorMessage(error, lang) {
   if (error instanceof ApiError) {
     if (error.status === 0 || error.code === 'API_URL_MISSING') {
       return lang === 'en'
         ? 'Sign-in is not configured. Please try again later or contact VIPCAR.'
-        : 'La connexion n’est pas configurée. Réessayez plus tard ou contactez VIPCAR.';
+        : lang === 'ar'
+          ? 'تسجيل الدخول غير مهيأ حالياً. حاول لاحقاً أو تواصل مع VIPCAR.'
+          : 'La connexion n’est pas configurée. Réessayez plus tard ou contactez VIPCAR.';
     }
     if (error.code === 'FORBIDDEN_ROLE') {
       return lang === 'en'
         ? 'This account is not authorized for the staff backoffice. Ops agents and admins only.'
-        : 'Ce compte n’est pas autorisé pour le back-office. Réservé aux agents ops et admins.';
+        : lang === 'ar'
+          ? 'هذا الحساب غير مصرح له بالدخول إلى لوحة الموظفين. الدخول مخصص للوكلاء والمديرين.'
+          : 'Ce compte n’est pas autorisé pour le back-office. Réservé aux agents ops et admins.';
     }
     if (error.status === 401 || error.status === 403) {
       return lang === 'en'
         ? 'Incorrect email or password.'
-        : 'E-mail ou mot de passe incorrect.';
+        : lang === 'ar'
+          ? 'البريد الإلكتروني أو كلمة المرور غير صحيحة.'
+          : 'E-mail ou mot de passe incorrect.';
     }
     if (error.status >= 400 && error.status < 500) {
       return error.message
         || (lang === 'en'
           ? 'Please check your details and try again.'
-          : 'Vérifiez vos informations et réessayez.');
+          : lang === 'ar'
+            ? 'تحقق من بياناتك وحاول مرة أخرى.'
+            : 'Vérifiez vos informations et réessayez.');
     }
   }
   return lang === 'en'
     ? 'We could not sign you in. Please try again in a moment.'
-    : 'Impossible de vous connecter. Réessayez dans un instant.';
+    : lang === 'ar'
+      ? 'تعذر تسجيل دخولك. حاول مرة أخرى بعد قليل.'
+      : 'Impossible de vous connecter. Réessayez dans un instant.';
 }

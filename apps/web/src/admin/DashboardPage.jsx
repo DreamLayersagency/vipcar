@@ -77,10 +77,15 @@ export function DashboardPage({ locale, copy, navigate }) {
       setState((current) => ({
         ...current,
         loading: false,
-        error: error instanceof ApiError ? error.message : d.error,
+        error:
+          error instanceof ApiError && error.code === 'SERVICE_UNAVAILABLE'
+            ? q.unavailable
+            : error instanceof ApiError
+              ? error.message
+              : d.error,
       }));
     }
-  }, [d.error, locale]);
+  }, [d.error, locale, q.unavailable]);
 
   React.useEffect(() => {
     const controller = new AbortController();

@@ -197,12 +197,18 @@ export function QuotesListPage({ locale, copy, navigate }) {
       } catch (err) {
         if (err?.name === 'AbortError') return;
         setRows([]);
-        setError(err instanceof ApiError ? err.message : q.error);
+        setError(
+          err instanceof ApiError && err.code === 'SERVICE_UNAVAILABLE'
+            ? q.unavailable
+            : err instanceof ApiError
+              ? err.message
+              : q.error,
+        );
       } finally {
         if (!signal?.aborted) setLoading(false);
       }
     },
-    [status, page, locale, q.error],
+    [status, page, locale, q.error, q.unavailable],
   );
 
   React.useEffect(() => {
@@ -399,12 +405,18 @@ export function QuoteDetailPage({ quoteId, locale, copy, navigate }) {
       } catch (err) {
         if (err?.name === 'AbortError') return;
         setQuote(null);
-        setError(err instanceof ApiError ? err.message : q.error);
+        setError(
+          err instanceof ApiError && err.code === 'SERVICE_UNAVAILABLE'
+            ? q.unavailable
+            : err instanceof ApiError
+              ? err.message
+              : q.error,
+        );
       } finally {
         if (!signal?.aborted) setLoading(false);
       }
     },
-    [quoteId, locale, q.notFound, q.error],
+    [quoteId, locale, q.notFound, q.error, q.unavailable],
   );
 
   React.useEffect(() => {

@@ -15,7 +15,7 @@ import { spawn } from 'node:child_process';
 import { FLEET_SEED } from '../src/fleet-seed.js';
 
 const PREVIEW_ORIGIN = 'http://127.0.0.1:4173';
-const langs = ['en', 'fr'];
+const langs = ['en', 'fr', 'ar'];
 const baseRoutes = [
   '',
   '/fleet',
@@ -99,9 +99,10 @@ try {
 
   for (const route of routes) {
     await page.goto(`${PREVIEW_ORIGIN}${route}`, {
-      waitUntil: 'networkidle',
+      waitUntil: 'domcontentloaded',
       timeout: 60_000,
     });
+    await page.waitForFunction(() => document.querySelector('#root')?.children.length > 0, undefined, { timeout: 10_000 });
     const html = await page.content();
     const directory = `dist${route}`;
     await mkdir(directory, { recursive: true });

@@ -344,5 +344,5 @@ export class DepositReleasedEventDto {
   customerName?: string;
   customerPhone?: string;
   customerEmail?: string;
-  locale?: 'en' | 'fr';
+  locale?: 'en' | 'fr' | 'ar';
 }
