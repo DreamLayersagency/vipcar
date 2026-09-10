@@ -8,14 +8,27 @@
  *
  * Auth-gated routes (`/login`, `/my-bookings`) and staff `/admin/*` are intentionally
  * omitted from this list (noindex; not public SEO).
+ *
+ * Netlify / CI: skip when `SKIP_PRERENDER=true` or `NETLIFY=true` — Playwright + Chromium
+ * exceeds typical free-tier build time/memory. SPA + `public/_redirects` still works.
  */
 import { chromium } from 'playwright';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { spawn } from 'node:child_process';
 import { FLEET_SEED } from '../src/fleet-seed.js';
 
+const skipPrerender =
+  process.env.SKIP_PRERENDER === '1' ||
+  process.env.SKIP_PRERENDER === 'true' ||
+  process.env.NETLIFY === 'true';
+
+if (skipPrerender) {
+  console.log('Skipping Playwright prerender (SKIP_PRERENDER or Netlify). Using SPA + _redirects.');
+  process.exit(0);
+}
+
 const PREVIEW_ORIGIN = 'http://127.0.0.1:4173';
-const langs = ['en', 'fr', 'ar'];
+const langs = ['en', 'fr'];
 const baseRoutes = [
   '',
   '/fleet',
