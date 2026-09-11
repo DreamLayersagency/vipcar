@@ -584,7 +584,9 @@ export function AdminApp({ pathname }) {
     page === 'dashboard'
       ? copy.dashboard.title
       : page === 'reservations' || page === 'reservation-detail'
-        ? copy.reservations.title
+        ? page === 'reservation-detail'
+          ? copy.reservations.detailTitle
+          : copy.reservations.title
       : page === 'quotes' || page === 'quote-detail'
       ? page === 'quote-detail'
         ? copy.quotes.detailTitle

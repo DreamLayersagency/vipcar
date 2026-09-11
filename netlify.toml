@@ -1,0 +1,19 @@
+# VIPCAR public site (apps/web) on Netlify free tier.
+# Backend (gateway + Nest services + Postgres/Redis/NATS) cannot run on Netlify —
+# deploy those separately and set VITE_API_URL to the gateway origin.
+
+[build]
+  command = "npm run build:web"
+  publish = "apps/web/dist"
+
+[build.environment]
+  NODE_VERSION = "20"
+  # Skip Playwright SSG on Netlify (browsers + ~100 routes blow free build limits).
+  SKIP_PRERENDER = "true"
+  # Optional: gateway URL for live catalog/booking/admin. Leave unset to use fleet seed fallback.
+  # VITE_API_URL = "https://api.your-domain.com"
+
+# SPA fallback is already in apps/web/public/_redirects (copied into dist/).
+# Keep Netlify from treating nested package.json files as separate sites.
+[build.processing]
+  skip_processing = false
