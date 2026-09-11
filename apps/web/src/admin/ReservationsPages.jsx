@@ -268,12 +268,12 @@ export function ReservationsListPage({ locale, copy, navigate }) {
   );
 }
 
-function Definition({ label, children, wide = false }) {
-  return <div className={`admin-definition${wide ? ' admin-definition--wide' : ''}`}><dt>{label}</dt><dd>{children || '—'}</dd></div>;
-}
-
-function ReservationSection({ title, children, className = '' }) {
-  return <section className={`admin-panel admin-reservation-section ${className}`}><div className="admin-section-heading"><h2>{title}</h2></div>{children}</section>;
+function SuccessBanner({ message }) {
+  return (
+    <div className="admin-banner admin-banner--ok" role="status">
+      {message}
+    </div>
+  );
 }
 
 export function ReservationDetailPage({ reservationId, locale, copy, navigate }) {
@@ -300,7 +300,13 @@ export function ReservationDetailPage({ reservationId, locale, copy, navigate })
         return;
       }
       setReservation(data);
-      setPriceInput(data.quote?.confirmedPriceTnd != null ? String(data.quote.confirmedPriceTnd) : data.quote?.indicativePriceTnd != null ? String(data.quote.indicativePriceTnd) : '');
+      setPriceInput(
+        data.quote?.confirmedPriceTnd != null
+          ? String(data.quote.confirmedPriceTnd)
+          : data.quote?.indicativePriceTnd != null
+            ? String(data.quote.indicativePriceTnd)
+            : '',
+      );
       setUnitId(data.fleetUnit?.id || '');
       setCustomerId(data.customer?.id || '');
       setStatusInput(data.booking?.status || data.status || '');
@@ -324,6 +330,9 @@ export function ReservationDetailPage({ reservationId, locale, copy, navigate })
       setReservation(data);
       setUnitId(data.fleetUnit?.id || '');
       setStatusInput(data.booking?.status || data.status || '');
+      if (data.quote?.confirmedPriceTnd != null) {
+        setPriceInput(String(data.quote.confirmedPriceTnd));
+      }
     }
     setBanner({ type: 'ok', text: message });
   };
@@ -407,110 +416,348 @@ export function ReservationDetailPage({ reservationId, locale, copy, navigate })
     }
   };
 
-  if (loading) {
-    return <div className="admin-reservation-detail"><div className="admin-detail-head"><span className="admin-skel admin-skel--title" /></div><div className="admin-detail-grid"><div className="admin-panel admin-detail-skeleton" /><div className="admin-panel admin-detail-skeleton" /></div></div>;
-  }
-
-  if (!reservation) {
-    return <div className="admin-reservation-detail"><ErrorBanner message={error || q.notFound} onRetry={() => load()} retryLabel={q.retry} /><Link className="admin-btn admin-btn--ghost" href="/admin/reservations" navigate={navigate}>{q.backToList}</Link></div>;
-  }
-
   const r = reservation;
-  const trip = r.trip || {};
-  const booking = r.booking;
-  const canPrice = !['confirmed', 'in_progress', 'completed', 'cancelled', 'no_show'].includes(r.status) && r.quote?.status !== 'converted';
-  const canConfirm = !['confirmed', 'in_progress', 'completed', 'cancelled', 'no_show'].includes(r.status);
-  const canAssign = booking && ['quote_requested', 'quoted', 'awaiting_payment'].includes(booking.status);
+  const trip = r?.trip || {};
+  const booking = r?.booking;
+  const canPrice =
+    r
+    && !['confirmed', 'in_progress', 'completed', 'cancelled', 'no_show'].includes(r.status)
+    && r.quote?.status !== 'converted';
+  const canConfirm =
+    r && !['confirmed', 'in_progress', 'completed', 'cancelled', 'no_show'].includes(r.status);
+  const canAssign =
+    booking && ['quote_requested', 'quoted', 'awaiting_payment'].includes(booking.status);
 
   return (
-    <div className="admin-reservation-detail">
-      <div className="admin-detail-head admin-reservation-detail__head">
-        <div>
-          <p className="admin-overline">{q.reference} · <span className="admin-mono">{shortId(r.id)}</span></p>
-          <p className="admin-lead">{q.created} {formatDateTime(r.createdAt, locale)} · {q.updated} {formatDateTime(r.updatedAt, locale)}</p>
-        </div>
-        <div className="admin-detail-head__actions">
-          <StatusChip status={r.status} labels={q.statuses} />
-          <Link className="admin-btn admin-btn--ghost" href="/admin/reservations" navigate={navigate}>{q.backToList}</Link>
-        </div>
-      </div>
+    <div className="admin-quotes admin-quotes--detail">
+      <p className="admin-back">
+        <Link href="/admin/reservations" navigate={navigate}>
+          ← {q.backToList}
+        </Link>
+      </p>
 
-      {banner ? <div className={`admin-banner admin-banner--${banner.type === 'ok' ? 'ok' : 'error'}`} role={banner.type === 'ok' ? 'status' : 'alert'}>{banner.text}</div> : null}
+      {banner?.type === 'ok' ? <SuccessBanner message={banner.text} /> : null}
+      {banner?.type === 'err' ? <ErrorBanner message={banner.text} /> : null}
 
-      <div className="admin-detail-grid admin-reservation-detail__grid">
-        <ReservationSection title={q.customerSection}>
-          <dl className="admin-definition-grid">
-            <Definition label={q.contact}>{r.customer?.name}</Definition>
-            <Definition label={q.phone}>{r.customer?.phone}</Definition>
-            <Definition label={q.email}>{r.customer?.email}</Definition>
-            <Definition label={q.language}>{r.customer?.language?.toUpperCase()}</Definition>
-          </dl>
-        </ReservationSection>
-        <ReservationSection title={q.tripSection}>
-          <dl className="admin-definition-grid">
-            <Definition label={q.service}>{q.services[trip.service] || trip.service}</Definition>
-            <Definition label={q.dates}>{formatDateRange(trip.startAt, trip.endAt, locale)}</Definition>
-            <Definition label={q.pickup}>{trip.pickupLabel}</Definition>
-            <Definition label={q.dropoff}>{trip.dropoffLabel}</Definition>
-            <Definition label={q.passengers}>{trip.passengers}</Definition>
-            <Definition label={q.duration}>{trip.duration}</Definition>
-            <Definition label={q.flight}>{trip.flightNumber}</Definition>
-            <Definition label={q.notes} wide>{trip.notes}</Definition>
-          </dl>
-        </ReservationSection>
-        <ReservationSection title={q.bookingSection} className="admin-reservation-section--wide">
-          {booking ? (
-            <dl className="admin-definition-grid">
-              <Definition label={q.bookingId}><span className="admin-mono">{booking.id}</span></Definition>
-              <Definition label={q.bookingStatus}><StatusChip status={booking.status} labels={q.statuses} /></Definition>
-              <Definition label={q.quotePrice}>{r.quote?.confirmedPriceTnd != null ? formatTnd(r.quote.confirmedPriceTnd, locale) : '—'}</Definition>
-              <Definition label={q.bookingPrice}>{formatTnd(booking.priceTnd, locale)}</Definition>
-            </dl>
-          ) : <p className="admin-muted">{q.noBooking}</p>}
-        </ReservationSection>
-        <ReservationSection title={q.resourcesSection} className="admin-reservation-section--wide">
-          <dl className="admin-definition-grid">
-            <Definition label={q.vehicleModel}><span className="admin-mono">{r.vehicleModel?.id}</span></Definition>
-            <Definition label={q.fleetUnit}><span className="admin-mono">{r.fleetUnit?.id}</span></Definition>
-            <Definition label={q.driver}><span className="admin-mono">{r.driver?.id}</span></Definition>
-          </dl>
-        </ReservationSection>
-      </div>
+      {loading ? (
+        <p className="admin-muted" aria-live="polite">
+          {q.loading}
+        </p>
+      ) : null}
 
-      <div className="admin-reservation-actions">
-        <ReservationSection title={q.priceSection}>
-          <form className="admin-form-stack" onSubmit={savePrice}>
-            <label className="admin-field"><span>{q.priceLabel}</span><input type="number" min="0" step="0.001" value={priceInput} onChange={(e) => setPriceInput(e.target.value)} disabled={!canPrice || Boolean(busy)} /></label>
-            <p className="admin-field__hint">{q.indicativePrice}: {formatTnd(r.quote?.indicativePriceTnd, locale)}</p>
-            <button className="admin-btn admin-btn--primary" type="submit" disabled={!canPrice || Boolean(busy)}>{busy === 'price' ? q.savingPrice : q.savePrice}</button>
-          </form>
-        </ReservationSection>
+      {!loading && !reservation ? (
+        <ErrorBanner message={error || q.notFound} onRetry={() => load()} retryLabel={q.retry} />
+      ) : null}
 
-        <ReservationSection title={q.confirm}>
-          <form className="admin-form-stack" onSubmit={confirmReservation}>
-            <label className="admin-field"><span>{q.unitId}</span><input value={unitId} onChange={(e) => setUnitId(e.target.value)} placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" disabled={!canConfirm || Boolean(busy)} /></label>
-            {!r.customer?.id ? <label className="admin-field"><span>{q.customerId}</span><input value={customerId} onChange={(e) => setCustomerId(e.target.value)} placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" disabled={!canConfirm || Boolean(busy)} /></label> : null}
-            <label className="admin-field"><span>{q.deposit}</span><input type="number" min="0" step="0.001" value={deposit} onChange={(e) => setDeposit(e.target.value)} disabled={!canConfirm || Boolean(busy)} /></label>
-            <p className="admin-field__hint">{q.confirmHint}</p>
-            <button className="admin-btn admin-btn--primary" type="submit" disabled={!canConfirm || Boolean(busy)}>{busy === 'confirm' ? q.confirming : q.confirm}</button>
-          </form>
-        </ReservationSection>
+      {!loading && reservation ? (
+        <>
+          <header className="admin-detail-head">
+            <div>
+              <p className="admin-muted admin-mono">{r.id}</p>
+              <h2 className="admin-detail-name">{r.customer?.name || q.detailTitle}</h2>
+              <p className="admin-lead">
+                {q.created} {formatDateTime(r.createdAt, locale)}
+                {r.updatedAt ? ` · ${q.updated} ${formatDateTime(r.updatedAt, locale)}` : ''}
+              </p>
+            </div>
+            <StatusChip status={r.status} labels={q.statuses} />
+          </header>
 
-        {booking ? <ReservationSection title={q.assignSection}>
-          <form className="admin-form-stack" onSubmit={assignUnit}>
-            <label className="admin-field"><span>{q.unitId}</span><input value={unitId} onChange={(e) => setUnitId(e.target.value)} placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" disabled={!canAssign || Boolean(busy)} /></label>
-            <p className="admin-field__hint">{q.unitIdHint}</p>
-            <button className="admin-btn admin-btn--ghost" type="submit" disabled={!canAssign || Boolean(busy)}>{busy === 'assign' ? q.assigning : q.assign}</button>
-          </form>
-        </ReservationSection> : null}
+          <div className="admin-detail-grid">
+            <section className="admin-panel">
+              <h3>{q.customerSection}</h3>
+              <dl className="admin-dl">
+                <div>
+                  <dt>{q.contact}</dt>
+                  <dd>{r.customer?.name || '—'}</dd>
+                </div>
+                {r.customer?.phone ? (
+                  <div>
+                    <dt>{q.phone}</dt>
+                    <dd>
+                      <a href={`tel:${r.customer.phone}`}>{r.customer.phone}</a>
+                    </dd>
+                  </div>
+                ) : null}
+                {r.customer?.email ? (
+                  <div>
+                    <dt>{q.email}</dt>
+                    <dd>
+                      <a href={`mailto:${r.customer.email}`}>{r.customer.email}</a>
+                    </dd>
+                  </div>
+                ) : null}
+                <div>
+                  <dt>{q.language}</dt>
+                  <dd>{r.customer?.language?.toUpperCase() || '—'}</dd>
+                </div>
+              </dl>
+            </section>
 
-        {booking ? <ReservationSection title={q.statusSection}>
-          <form className="admin-form-stack" onSubmit={updateStatus}>
-            <label className="admin-field"><span>{q.statusLabel}</span><select value={statusInput} onChange={(e) => setStatusInput(e.target.value)} disabled={Boolean(busy)}>{RESERVATION_STATUSES.map((value) => <option key={value} value={value}>{q.statuses[value]}</option>)}</select></label>
-            <button className="admin-btn admin-btn--ghost" type="submit" disabled={Boolean(busy) || statusInput === booking.status}>{busy === 'status' ? q.updatingStatus : q.updateStatus}</button>
-          </form>
-        </ReservationSection> : null}
-      </div>
+            <section className="admin-panel">
+              <h3>{q.tripSection}</h3>
+              <dl className="admin-dl">
+                <div>
+                  <dt>{q.service}</dt>
+                  <dd>{q.services[trip.service] || trip.service || '—'}</dd>
+                </div>
+                <div>
+                  <dt>{q.dates}</dt>
+                  <dd>{formatDateRange(trip.startAt, trip.endAt, locale)}</dd>
+                </div>
+                <div>
+                  <dt>{q.pickup}</dt>
+                  <dd>{trip.pickupLabel || '—'}</dd>
+                </div>
+                <div>
+                  <dt>{q.dropoff}</dt>
+                  <dd>{trip.dropoffLabel || '—'}</dd>
+                </div>
+                {trip.passengers != null ? (
+                  <div>
+                    <dt>{q.passengers}</dt>
+                    <dd>{trip.passengers}</dd>
+                  </div>
+                ) : null}
+                {trip.duration ? (
+                  <div>
+                    <dt>{q.duration}</dt>
+                    <dd>{trip.duration}</dd>
+                  </div>
+                ) : null}
+                {trip.flightNumber ? (
+                  <div>
+                    <dt>{q.flight}</dt>
+                    <dd>{trip.flightNumber}</dd>
+                  </div>
+                ) : null}
+                {trip.notes ? (
+                  <div className="admin-dl--full">
+                    <dt>{q.notes}</dt>
+                    <dd>{trip.notes}</dd>
+                  </div>
+                ) : null}
+              </dl>
+            </section>
+
+            <section className="admin-panel">
+              <h3>{q.bookingSection}</h3>
+              {booking ? (
+                <dl className="admin-dl">
+                  <div>
+                    <dt>{q.bookingId}</dt>
+                    <dd className="admin-mono">{booking.id}</dd>
+                  </div>
+                  <div>
+                    <dt>{q.bookingStatus}</dt>
+                    <dd>
+                      <StatusChip status={booking.status} labels={q.statuses} />
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>{q.quotePrice}</dt>
+                    <dd>
+                      {r.quote?.confirmedPriceTnd != null
+                        ? `${formatTnd(r.quote.confirmedPriceTnd, locale)} TND`
+                        : '—'}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>{q.bookingPrice}</dt>
+                    <dd>
+                      <strong>
+                        {booking.priceTnd != null ? `${formatTnd(booking.priceTnd, locale)} TND` : '—'}
+                      </strong>
+                    </dd>
+                  </div>
+                </dl>
+              ) : (
+                <p className="admin-muted">{q.noBooking}</p>
+              )}
+            </section>
+
+            <section className="admin-panel">
+              <h3>{q.resourcesSection}</h3>
+              <dl className="admin-dl">
+                <div>
+                  <dt>{q.vehicleModel}</dt>
+                  <dd className="admin-mono">{r.vehicleModel?.id ? shortId(r.vehicleModel.id) : '—'}</dd>
+                </div>
+                <div>
+                  <dt>{q.fleetUnit}</dt>
+                  <dd className="admin-mono">{r.fleetUnit?.id ? shortId(r.fleetUnit.id) : '—'}</dd>
+                </div>
+                <div>
+                  <dt>{q.driver}</dt>
+                  <dd className="admin-mono">{r.driver?.id ? shortId(r.driver.id) : '—'}</dd>
+                </div>
+              </dl>
+            </section>
+
+            <section className="admin-panel">
+              <h3>{q.priceSection}</h3>
+              <dl className="admin-dl">
+                <div>
+                  <dt>{q.indicativePrice}</dt>
+                  <dd>{formatTnd(r.quote?.indicativePriceTnd, locale)} TND</dd>
+                </div>
+                <div>
+                  <dt>{q.quotePrice}</dt>
+                  <dd>
+                    <strong>
+                      {r.quote?.confirmedPriceTnd != null
+                        ? `${formatTnd(r.quote.confirmedPriceTnd, locale)} TND`
+                        : '—'}
+                    </strong>
+                  </dd>
+                </div>
+              </dl>
+              {canPrice ? (
+                <form className="admin-form" onSubmit={savePrice}>
+                  <label className="admin-field">
+                    {q.priceLabel}
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.001"
+                      inputMode="decimal"
+                      value={priceInput}
+                      onChange={(e) => setPriceInput(e.target.value)}
+                      disabled={Boolean(busy)}
+                      required
+                    />
+                  </label>
+                  <button
+                    type="submit"
+                    className="admin-btn admin-btn--primary"
+                    disabled={Boolean(busy)}
+                  >
+                    {busy === 'price' ? q.savingPrice : q.savePrice}
+                  </button>
+                </form>
+              ) : (
+                <p className="admin-muted">{q.cannotPrice}</p>
+              )}
+            </section>
+
+            <section className="admin-panel">
+              <h3>{q.confirm}</h3>
+              {canConfirm ? (
+                <form className="admin-form" onSubmit={confirmReservation}>
+                  <label className="admin-field">
+                    {q.unitId}
+                    <input
+                      type="text"
+                      autoComplete="off"
+                      spellCheck={false}
+                      placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+                      value={unitId}
+                      onChange={(e) => setUnitId(e.target.value)}
+                      disabled={Boolean(busy)}
+                      required
+                    />
+                    <span className="admin-field__hint">{q.unitIdHint}</span>
+                  </label>
+                  {!r.customer?.id ? (
+                    <label className="admin-field">
+                      {q.customerId}
+                      <input
+                        type="text"
+                        autoComplete="off"
+                        spellCheck={false}
+                        value={customerId}
+                        onChange={(e) => setCustomerId(e.target.value)}
+                        disabled={Boolean(busy)}
+                        required
+                      />
+                      <span className="admin-field__hint">{q.customerIdHint}</span>
+                    </label>
+                  ) : null}
+                  <label className="admin-field">
+                    {q.deposit}
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.001"
+                      inputMode="decimal"
+                      value={deposit}
+                      onChange={(e) => setDeposit(e.target.value)}
+                      disabled={Boolean(busy)}
+                    />
+                  </label>
+                  <p className="admin-muted">{q.confirmHint}</p>
+                  <button
+                    type="submit"
+                    className="admin-btn admin-btn--primary"
+                    disabled={Boolean(busy) || !unitId.trim()}
+                  >
+                    {busy === 'confirm' ? q.confirming : q.confirm}
+                  </button>
+                </form>
+              ) : (
+                <p className="admin-muted">{q.confirmSuccess}</p>
+              )}
+            </section>
+
+            {booking ? (
+              <section className="admin-panel">
+                <h3>{q.assignSection}</h3>
+                <form className="admin-form" onSubmit={assignUnit}>
+                  <label className="admin-field">
+                    {q.unitId}
+                    <input
+                      type="text"
+                      autoComplete="off"
+                      spellCheck={false}
+                      placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+                      value={unitId}
+                      onChange={(e) => setUnitId(e.target.value)}
+                      disabled={!canAssign || Boolean(busy)}
+                    />
+                    <span className="admin-field__hint">{q.unitIdHint}</span>
+                  </label>
+                  <button
+                    type="submit"
+                    className="admin-btn admin-btn--ghost"
+                    disabled={!canAssign || Boolean(busy) || !unitId.trim()}
+                  >
+                    {busy === 'assign' ? q.assigning : q.assign}
+                  </button>
+                </form>
+              </section>
+            ) : null}
+
+            {booking ? (
+              <section className="admin-panel">
+                <h3>{q.statusSection}</h3>
+                <form className="admin-form" onSubmit={updateStatus}>
+                  <label className="admin-field">
+                    {q.statusLabel}
+                    <select
+                      value={statusInput}
+                      onChange={(e) => setStatusInput(e.target.value)}
+                      disabled={Boolean(busy)}
+                    >
+                      {RESERVATION_STATUSES.map((value) => (
+                        <option key={value} value={value}>
+                          {q.statuses[value]}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <button
+                    type="submit"
+                    className="admin-btn admin-btn--ghost"
+                    disabled={Boolean(busy) || statusInput === booking.status}
+                  >
+                    {busy === 'status' ? q.updatingStatus : q.updateStatus}
+                  </button>
+                </form>
+              </section>
+            ) : null}
+          </div>
+        </>
+      ) : null}
     </div>
   );
 }
