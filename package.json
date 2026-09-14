@@ -53,6 +53,7 @@
     "prisma:fleet:generate": "node scripts/prisma.cjs --app fleet generate",
     "prisma:fleet:migrate": "node scripts/prisma.cjs --app fleet migrate",
     "prisma:fleet:deploy": "node scripts/prisma.cjs --app fleet deploy",
+    "prisma:fleet:seed": "node scripts/prisma.cjs --app fleet seed",
     "prisma:billing:generate": "node scripts/prisma.cjs --app billing generate",
     "prisma:billing:migrate": "node scripts/prisma.cjs --app billing migrate",
     "prisma:billing:deploy": "node scripts/prisma.cjs --app billing deploy",

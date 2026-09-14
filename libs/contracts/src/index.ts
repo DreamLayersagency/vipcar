@@ -176,3 +176,13 @@ export { ANALYTICS_EVENTS } from './analytics';
 export type { AnalyticsEventName } from './analytics';
 export { TrackAnalyticsEventDto, AnalyticsSummaryQueryDto } from './analytics.dto';
 export type { AnalyticsDailyPoint, AnalyticsSummary } from './analytics.dto';
+export {
+  OPS_NOTIFICATION_KINDS,
+  ListOpsNotificationsQueryDto,
+  ListOpsNotificationsDto,
+  MarkOpsNotificationsReadHttpDto,
+  MarkOpsNotificationsReadDto,
+} from './notifications.dto';
+export type { OpsNotificationKind, OpsNotificationDto } from './notifications.dto';
+export { OPS_FOLLOW_UP_STATUSES, GetOpsFollowUpDto, UpdateOpsFollowUpDto, UpdateOpsFollowUpHttpDto } from './ops-workflow.dto';
+export type { OpsFollowUpStatus, OpsFollowUpDto } from './ops-workflow.dto';

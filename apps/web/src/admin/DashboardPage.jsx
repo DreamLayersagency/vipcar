@@ -7,6 +7,7 @@ import {
   shortId,
 } from './opsQuotes.js';
 import { StatusChip } from './QuotesPages.jsx';
+import { AnalyticsOverview } from './AnalyticsPage.jsx';
 
 function Link({ href, navigate, children, className = '' }) {
   return (
@@ -123,6 +124,20 @@ export function DashboardPage({ locale, copy, navigate }) {
         </Link>
       </div>
 
+      <section className="admin-panel admin-dashboard__analytics">
+        <div className="admin-dashboard__section-head">
+          <div>
+            <p className="admin-overline">{d.analyticsEyebrow}</p>
+            <h2>{d.analyticsTitle}</h2>
+            <p>{d.analyticsHint}</p>
+          </div>
+          <Link className="admin-text-link" href="/admin/analytics" navigate={navigate}>
+            {d.viewAnalytics}
+          </Link>
+        </div>
+        <AnalyticsOverview locale={locale} copy={copy} embedded />
+      </section>
+
       {state.error ? (
         <div className="admin-banner admin-banner--error" role="alert">
           <span>{state.error}</span>
@@ -222,6 +237,7 @@ export function DashboardPage({ locale, copy, navigate }) {
           </div>
         </section>
       </div>
+
     </div>
   );
 }

@@ -9,8 +9,10 @@ import {
   formatTnd,
   listOpsQuotes,
   patchOpsQuotePrice,
+  quoteReference,
   shortId,
 } from './opsQuotes.js';
+import { WorkflowStatusBadge, WorkflowStatusPanel } from './WorkflowStatus.jsx';
 
 /**
  * @param {string} href
@@ -283,6 +285,7 @@ export function QuotesListPage({ locale, copy, navigate }) {
                   <th>{q.colPickup}</th>
                   <th>{q.colDates}</th>
                   <th>{q.colStatus}</th>
+                  <th>{copy.workflow.column}</th>
                   <th>{q.colPrice}</th>
                   <th>{q.colActions}</th>
                 </tr>
@@ -307,6 +310,7 @@ export function QuotesListPage({ locale, copy, navigate }) {
                     <td>
                       <StatusChip status={row.status} labels={q.statuses} />
                     </td>
+                    <td><WorkflowStatusBadge recordId={row.id} copy={copy} /></td>
                     <td>
                       {row.confirmedPriceTnd != null
                         ? formatTnd(row.confirmedPriceTnd, locale)
@@ -527,16 +531,61 @@ export function QuoteDetailPage({ quoteId, locale, copy, navigate }) {
 
       {!loading && quote ? (
         <>
-          <header className="admin-detail-head">
-            <div>
-              <p className="admin-muted admin-mono">{quote.id}</p>
+          <header className="admin-detail-hero">
+            <div className="admin-detail-hero__identity">
+              <p className="admin-detail-hero__eyebrow">{copy.detail.quoteEyebrow}</p>
+              <p className="admin-detail-hero__reference admin-mono" title={quote.id}>
+                {quoteReference(quote.id)}
+              </p>
               <h2 className="admin-detail-name">{quote.customerName}</h2>
+              <p className="admin-detail-hero__meta">
+                <span>{copy.detail.created} {formatDateTime(quote.createdAt, locale)}</span>
+                {quote.updatedAt ? <span>{copy.detail.updated} {formatDateTime(quote.updatedAt, locale)}</span> : null}
+              </p>
             </div>
-            <StatusChip status={quote.status} labels={q.statuses} />
+            <div className="admin-detail-hero__status">
+              <span className="admin-detail-hero__status-label">{copy.detail.systemStatus}</span>
+              <StatusChip status={quote.status} labels={q.statuses} />
+              <div className="admin-detail-hero__workflow">
+                <span>{copy.detail.workflowStatus}</span>
+                <WorkflowStatusBadge recordId={quote.id} copy={copy} />
+              </div>
+            </div>
           </header>
 
+          <div className="admin-detail-overview" aria-label={q.detailTitle}>
+            <div className="admin-detail-overview__item">
+              <span>{copy.detail.service}</span>
+              <strong>{q.services[quote.service] || quote.service || '—'}</strong>
+            </div>
+            <div className="admin-detail-overview__item admin-detail-overview__item--wide">
+              <span>{copy.detail.route}</span>
+              <strong title={`${quote.pickupLabel || ''} → ${quote.dropoffLabel || ''}`}>
+                {quote.pickupLabel || quote.dropoffLabel
+                  ? `${quote.pickupLabel || '—'} → ${quote.dropoffLabel || '—'}`
+                  : copy.detail.noRoute}
+              </strong>
+            </div>
+            <div className="admin-detail-overview__item">
+              <span>{copy.detail.dates}</span>
+              <strong>{quote.startAt ? formatDateRange(quote.startAt, quote.endAt, locale) : copy.detail.noDates}</strong>
+            </div>
+            <div className="admin-detail-overview__item">
+              <span>{copy.detail.value}</span>
+              <strong>
+                {quote.confirmedPriceTnd != null
+                  ? `${formatTnd(quote.confirmedPriceTnd, locale)} TND`
+                  : quote.indicativePriceTnd != null
+                    ? `~${formatTnd(quote.indicativePriceTnd, locale)} TND`
+                    : copy.detail.noValue}
+              </strong>
+            </div>
+          </div>
+
+          <WorkflowStatusPanel recordId={quote.id} copy={copy} />
+
           <div className="admin-detail-grid">
-            <section className="admin-panel">
+            <section className="admin-panel admin-detail-card admin-detail-card--primary">
               <h3>{q.contact}</h3>
               <dl className="admin-dl">
                 <div>
@@ -570,7 +619,7 @@ export function QuoteDetailPage({ quoteId, locale, copy, navigate }) {
               </dl>
             </section>
 
-            <section className="admin-panel">
+            <section className="admin-panel admin-detail-card admin-detail-card--primary">
               <h3>{q.trip}</h3>
               <dl className="admin-dl">
                 <div>
@@ -622,7 +671,7 @@ export function QuoteDetailPage({ quoteId, locale, copy, navigate }) {
               </dl>
             </section>
 
-            <section className="admin-panel">
+            <section className="admin-panel admin-detail-card admin-detail-card--action">
               <h3>{q.pricing}</h3>
               <dl className="admin-dl">
                 <div>
@@ -665,7 +714,7 @@ export function QuoteDetailPage({ quoteId, locale, copy, navigate }) {
               )}
             </section>
 
-            <section className="admin-panel">
+            <section className="admin-panel admin-detail-card admin-detail-card--action">
               <h3>{q.confirmSection}</h3>
               {quote.status === 'converted' || booking ? (
                 <div>

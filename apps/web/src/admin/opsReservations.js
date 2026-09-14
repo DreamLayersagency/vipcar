@@ -112,6 +112,17 @@ export async function assignOpsReservationUnit(reservationId, unitId, opts = {})
 
 export { formatDateRange, formatDateTime, formatTnd, shortId } from './opsQuotes.js';
 
+/**
+ * Human-friendly display reference. The UUID remains the canonical identifier
+ * in links and is available as the element title for support/debugging.
+ * @param {string | null | undefined} id
+ */
+export function reservationReference(id) {
+  if (!id) return '—';
+  const compact = String(id).replace(/-/g, '').slice(0, 6).toUpperCase();
+  return compact ? `RES-${compact}` : '—';
+}
+
 export function isApiError(error) {
   return error instanceof Error && error.name === 'ApiError';
 }

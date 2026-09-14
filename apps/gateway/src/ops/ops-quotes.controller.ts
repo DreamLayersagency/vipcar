@@ -46,7 +46,7 @@ export class OpsQuotesController {
   @ApiOperation({
     summary: 'List quotes (staff inbox)',
     description:
-      'Paginated quotes inbox with optional status filter. Roles: ops_agent, admin.',
+      'Paginated quotes inbox with optional status and channel filters. Roles: ops_agent, admin.',
   })
   async list(@Query() query: ListQuotesDto) {
     return this.send<{ data: QuoteDto[]; meta: PaginationMetaDto }>(

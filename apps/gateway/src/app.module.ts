@@ -23,6 +23,7 @@ import { BookingsModule } from './bookings/bookings.module';
 import { MeModule } from './me/me.module';
 import { AnalyticsClientModule } from './analytics-client.module';
 import { AnalyticsModule } from './analytics/analytics.module';
+import { NotifyClientModule } from './notify-client.module';
 
 @Module({
   imports: [
@@ -48,6 +49,7 @@ import { AnalyticsModule } from './analytics/analytics.module';
     BillingClientModule,
     DispatchClientModule,
     AnalyticsClientModule,
+    NotifyClientModule,
     AuthModule,
     CatalogModule,
     CmsModule,

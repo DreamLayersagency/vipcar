@@ -644,3 +644,234 @@ html[dir="rtl"] .booking-panel .quote .form-feedback{border-left:1px solid rgba(
 @media(max-width:1000px){.fleet-carousel__viewport{grid-auto-columns:minmax(19rem,calc((100% - .5rem)/2))}}
 @media(max-width:700px){.fleet-carousel__controls{align-items:flex-end}.fleet-carousel__count{max-width:13rem;line-height:1.45}.fleet-carousel__viewport{grid-auto-columns:85%}}
 @media(prefers-reduced-motion:reduce){.page-transition,.page-transition__line::after{animation-duration:1ms}}
+
+/* Homepage trip finder: compact the decision path without hiding any fields. */
+.home-quote-wrap .quote {
+  padding: 26px 30px 22px;
+  border-top-width: 3px;
+  border-radius: 8px;
+  box-shadow: 0 22px 58px rgba(8, 10, 9, 0.16);
+}
+
+.home-quote-wrap .quote-heading {
+  align-items: center;
+  gap: 18px;
+  margin-bottom: 15px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid var(--line);
+}
+
+.home-quote-wrap .quote-heading h3 {
+  margin-top: 3px;
+  font-size: clamp(1.85rem, 2.8vw, 2.55rem);
+}
+
+.home-quote-wrap .quote-heading > span {
+  flex: none;
+  padding: 7px 9px;
+  border-radius: 999px;
+  font-size: 9px;
+}
+
+.home-quote-wrap .quote-progress {
+  gap: 7px;
+  margin: 0 0 13px;
+  padding: 0;
+  border: 0;
+}
+
+.home-quote-wrap .quote-progress span {
+  min-height: 27px;
+  padding: 5px 9px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: #f1f1eb;
+  font-size: 8px;
+}
+
+.home-quote-wrap .quote-progress span.active {
+  background: var(--green);
+  color: var(--white);
+}
+
+.home-quote-wrap .quote-progress span.active b {
+  color: var(--white);
+}
+
+.home-quote-wrap .quote-progress i {
+  max-width: 32px;
+  background: var(--line);
+}
+
+.home-quote-wrap .quote-service-choice {
+  gap: 5px;
+  margin-bottom: 15px;
+  padding: 5px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: #f1f1eb;
+}
+
+.home-quote-wrap .quote-service-choice button {
+  min-height: 60px;
+  padding: 10px 12px;
+  border-radius: 5px;
+}
+
+.home-quote-wrap .quote-service-choice button strong {
+  font-size: 10px;
+}
+
+.home-quote-wrap .quote-service-choice button small {
+  font-size: 8px;
+}
+
+.home-quote-wrap .quote-step h4 {
+  margin-bottom: 9px;
+  font-size: 9px;
+}
+
+.home-quote-wrap .quote-trip-fields {
+  grid-template-columns: repeat(auto-fit, minmax(165px, 1fr));
+}
+
+.home-quote-wrap .quote-fields {
+  gap: 10px;
+}
+
+.home-quote-wrap .quote label {
+  min-width: 0;
+  gap: 5px;
+}
+
+.home-quote-wrap .quote label span {
+  min-height: 14px;
+  font-size: 8px;
+}
+
+.home-quote-wrap .quote input,
+.home-quote-wrap .quote select {
+  height: 46px;
+  min-height: 46px;
+  padding: 0 11px;
+  border: 1px solid #dedfd8;
+  border-bottom-color: #c6c6c0;
+  background: #f5f5f0;
+  font-size: 11px;
+}
+
+.home-quote-wrap .quote-step-actions {
+  justify-content: flex-end;
+  margin-top: 13px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.home-quote-wrap .quote-step-actions .button {
+  min-width: 176px;
+  min-height: 46px;
+  height: 46px;
+}
+
+.home-quote-wrap .quote-note {
+  margin-top: 10px;
+  color: #7c8078;
+  font-size: 9px;
+  line-height: 1.45;
+}
+
+@media (max-width: 900px) {
+  .home-quote-wrap .quote-trip-fields {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 700px) {
+  .home-quote-wrap .quote {
+    padding: 19px 14px 16px;
+    border-top-width: 3px;
+  }
+
+  .home-quote-wrap .quote-heading {
+    margin-bottom: 13px;
+    padding-bottom: 13px;
+  }
+
+  .home-quote-wrap .quote-heading h3 {
+    font-size: 1.95rem;
+  }
+
+  .home-quote-wrap .quote-heading > span {
+    margin-top: 8px;
+  }
+
+  .home-quote-wrap .quote-progress {
+    margin-bottom: 11px;
+  }
+
+  .home-quote-wrap .quote-progress span {
+    flex: 1;
+    justify-content: center;
+    padding-inline: 5px;
+    font-size: 7px;
+  }
+
+  .home-quote-wrap .quote-service-choice {
+    gap: 4px;
+    margin-bottom: 13px;
+    padding: 4px;
+  }
+
+  .home-quote-wrap .quote-service-choice button {
+    min-height: 52px;
+    padding: 8px 10px;
+  }
+
+  .home-quote-wrap .quote-fields {
+    gap: 8px;
+  }
+
+  .home-quote-wrap .quote-step-actions {
+    margin-top: 11px;
+    padding-top: 10px;
+  }
+
+  .home-quote-wrap .quote-step-actions .button {
+    width: 100%;
+  }
+}
+
+@media (max-width: 520px) {
+  .home-quote-wrap .quote-trip-fields {
+    grid-template-columns: 1fr;
+  }
+}
+
+.analytics-consent {
+  position: fixed;
+  z-index: 80;
+  inset-inline: 18px;
+  bottom: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  max-width: 980px;
+  margin-inline: auto;
+  padding: 16px 18px;
+  border: 1px solid rgba(27, 37, 34, .14);
+  border-radius: 16px;
+  background: rgba(255, 255, 251, .97);
+  box-shadow: 0 16px 42px rgba(8, 10, 9, .16);
+}
+
+.analytics-consent strong { display: block; color: #1b2522; font-size: 14px; }
+.analytics-consent p { max-width: 650px; margin: 4px 0 0; color: #656761; font-size: 12px; line-height: 1.5; }
+.analytics-consent__actions { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.analytics-consent__actions .button { min-height: 40px; padding-inline: 15px; font-size: 11px; }
+.analytics-consent__decline { border: 0; background: transparent; color: #656761; cursor: pointer; font-size: 11px; }
+
+@media (max-width: 700px) {
+  .analytics-consent { align-items: stretch; flex-direction: column; gap: 12px; bottom: 10px; padding: 15px; }
+  .analytics-consent__actions { justify-content: flex-end; }
+}

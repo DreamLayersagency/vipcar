@@ -1,4 +1,4 @@
-import React, { useEffect, useLayoutEffect, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import Lenis from 'lenis';
 import gsap from 'gsap';
@@ -10,13 +10,15 @@ import {
 } from 'lucide-react';
 import './styles.css';
 import './premium.css';
-import { initAnalytics, trackEvent, trackPageView } from './analytics';
+import { getAnalyticsConsent, initAnalytics, setAnalyticsConsent, trackEvent, trackPageView } from './analytics';
 import {
   buildWhatsAppQuoteMessage,
+  createContact,
   createQuote,
   formatQuoteReference,
   openWhatsAppQuote,
   quoteErrorMessage,
+  contactErrorMessage,
 } from './quotes';
 import {
   clearSession,
@@ -57,6 +59,20 @@ function languageIndex(lang) { return lang === 'en' ? 0 : lang === 'fr' ? 1 : 2;
 function text(lang, english, french, arabic) { return lang === 'ar' ? arabic : lang === 'fr' ? french : english; }
 function languageOption(lang) { return LANGUAGES.find((item) => item.code === lang) ?? LANGUAGES[0]; }
 
+function isKnownPublicRoute(parts) {
+  if (!parts.length) return true;
+  if (['login', 'my-bookings'].includes(parts[0])) return false;
+  if (['booking', 'corporate', 'contact', 'faq', 'about', 'destinations'].includes(parts[0])) return parts.length === 1;
+  if (parts[0] === 'fleet') return parts.length === 1 || (parts.length === 2 && fleet.some((item) => item.slug === parts[1]));
+  if (parts[0] === 'services') return parts.length === 1 || (parts.length === 2 && services.some((item) => item.key === parts[1]));
+  if (parts[0] === 'blog') return parts.length === 1 || (parts.length === 2 && Boolean(articles[parts[1]]));
+  if (parts[0] === 'legal') return parts.length === 2 && Boolean(legalPages[parts[1]]);
+  if (['car-rental', 'airport-transfers', 'chauffeur'].includes(parts[0])) {
+    return parts.length === 2 && commercialLocations.some((item) => item.slug === parts[1]);
+  }
+  return false;
+}
+
 const locationLabels = {
   'Tunis-Carthage Airport': 'مطار تونس قرطاج',
   Tunis: 'تونس',
@@ -68,6 +84,12 @@ const locationLabels = {
   Nabeul: 'نابل',
   Bizerte: 'بنزرت',
 };
+const airportLabels = {
+  'Tunis-Carthage Airport': ['Tunis-Carthage Airport', 'Aéroport Tunis-Carthage', 'مطار تونس قرطاج'],
+  'Enfidha-Hammamet Airport': ['Enfidha-Hammamet Airport', 'Aéroport Enfidha-Hammamet', 'مطار النفيضة الحمامات'],
+  'Djerba-Zarzis Airport': ['Djerba-Zarzis Airport', 'Aéroport Djerba-Zarzis', 'مطار جربة جرجيس'],
+};
+function airportLabel(name, lang) { return airportLabels[name]?.[languageIndex(lang)] ?? name; }
 function locationLabel(name, lang) { return lang === 'ar' ? locationLabels[name] ?? name : name; }
 function categoryLabel(category, lang) {
   if (lang !== 'ar') return category;
@@ -117,6 +139,7 @@ const copy = {
     requestSavedWhatsapp: 'We save your request first, then open WhatsApp so the VIPCAR team can confirm with you.',
     whatsappTitle: 'Message VIPCAR', whatsappPlaceholder: 'Write your message…', whatsappSend: 'Open WhatsApp', whatsappClose: 'Close',
     whatsappHint: 'Your message will open in WhatsApp.', whatsappDefault: 'Hello VIPCAR, I would like more information about your services.',
+    analyticsConsentTitle: 'Help us improve VIPCAR', analyticsConsentBody: 'Allow anonymous visit and enquiry measurement so we can improve the website. Your form details are never used for analytics.', analyticsAccept: 'Allow analytics', analyticsDecline: 'No thanks',
   },
   fr: {
     nav: ['Location', 'Transferts aéroport', 'Chauffeur', 'Flotte', 'Entreprises', 'Destinations', 'À propos'],
@@ -147,6 +170,7 @@ const copy = {
     requestSavedWhatsapp: 'Nous enregistrons d’abord votre demande, puis ouvrons WhatsApp pour confirmation avec l’équipe VIPCAR.',
     whatsappTitle: 'Écrire à VIPCAR', whatsappPlaceholder: 'Écrivez votre message…', whatsappSend: 'Ouvrir WhatsApp', whatsappClose: 'Fermer',
     whatsappHint: 'Votre message s’ouvrira dans WhatsApp.', whatsappDefault: 'Bonjour VIPCAR, je souhaite recevoir plus d’informations sur vos services.',
+    analyticsConsentTitle: 'Aidez-nous à améliorer VIPCAR', analyticsConsentBody: 'Autorisez une mesure anonyme des visites et demandes pour améliorer le site. Vos coordonnées ne sont jamais utilisées pour les analytics.', analyticsAccept: 'Autoriser les analytics', analyticsDecline: 'Non merci',
   },
   ar: {
     nav: ['تأجير السيارات', 'خدمات النقل من المطار', 'سائق خاص', 'الأسطول', 'الشركات', 'الوجهات', 'من نحن'],
@@ -175,6 +199,7 @@ const copy = {
     requestSavedWhatsapp: 'نحفظ طلبك أولاً، ثم نفتح واتساب ليؤكد فريق VIPCAR التفاصيل معك.',
     whatsappTitle: 'تواصل مع VIPCAR', whatsappPlaceholder: 'اكتب رسالتك…', whatsappSend: 'فتح واتساب', whatsappClose: 'إغلاق',
     whatsappHint: 'ستفتح رسالتك في واتساب.', whatsappDefault: 'مرحباً VIPCAR، أود الحصول على مزيد من المعلومات حول خدماتكم.',
+    analyticsConsentTitle: 'ساعدنا على تحسين VIPCAR', analyticsConsentBody: 'اسمح بقياس مجهول للزيارات والطلبات حتى نطور الموقع. لا نستخدم بيانات نموذجك في التحليلات.', analyticsAccept: 'السماح بالتحليلات', analyticsDecline: 'لا، شكراً',
   }
 };
 
@@ -362,7 +387,15 @@ function QuoteWidget({lang,compact=false,selectedVehicle=null,serviceType=null})
   const [error,setError]=useState('');
   const [submitting,setSubmitting]=useState(false);
   const [success,setSuccess]=useState(null);
-  useEffect(()=>{initAnalytics()},[]);
+  const quoteCompleted=useRef(false);
+  useEffect(()=>{
+    initAnalytics();
+    trackEvent('quote_start',{form:'quote',funnelStep:'trip',location:compact?'compact_quote':'quote'});
+    const onPageHide=()=>{if(!quoteCompleted.current)trackEvent('quote_abandon',{form:'quote',funnelStep:`step_${step}`,service,location:compact?'compact_quote':'quote'})};
+    window.addEventListener('pagehide',onPageHide);
+    return()=>window.removeEventListener('pagehide',onPageHide);
+  },[]);
+  useEffect(()=>{trackEvent('quote_step_view',{form:'quote',funnelStep:`step_${step}`,service,location:compact?'compact_quote':'quote'});},[compact,service,step]);
   const today=new Date().toISOString().slice(0,10);
   const t=copy[lang];
   const {currency}=useCurrency();
@@ -470,8 +503,9 @@ function QuoteWidget({lang,compact=false,selectedVehicle=null,serviceType=null})
         email,
         notes,
       })} Reference: ${reference}.`;
+      quoteCompleted.current=true;
       setSuccess({reference,whatsappText});
-      trackEvent('quote_submit',{service,language:lang,location:compact?'compact_quote':'quote',vehicle:selectedVehicle?.slug});
+      trackEvent('quote_submit',{service,language:lang,location:compact?'compact_quote':'quote',vehicle:selectedVehicle?.slug,form:'quote',funnelStep:'submit'});
     }catch(err){
       setError(quoteErrorMessage(err,lang));
     }finally{
@@ -479,6 +513,7 @@ function QuoteWidget({lang,compact=false,selectedVehicle=null,serviceType=null})
     }
   };
   const reset=()=>{
+    quoteCompleted.current=false;
     setSuccess(null);
     setError('');
     setStep(1);
@@ -1048,7 +1083,7 @@ function articleLocale(slug, article, lang) {
 
 function ArticlePage({lang,slug}) { const article=articles[slug]; if(!article)return <NotFound lang={lang}/>; const [title,summary,sections]=articleLocale(slug,article,lang); const related=Object.entries(articles).filter(([key])=>key!==slug).slice(0,3); return <main className="page"><PageHero image={article.image} eyebrow={text(lang,'VIPCAR travel journal','Journal de voyage VIPCAR','مجلة سفر VIPCAR')} title={title} text={summary}/><article className="section article-copy"><p className="overline">{text(lang,'Travel guidance','Conseils de voyage','إرشادات السفر')}</p><h2>{title}</h2><p>{summary}</p><div className="article-sections">{sections.map(([heading,textValue])=><section key={heading}><h3>{heading}</h3><p>{textValue}</p></section>)}</div><p>{text(lang,'Share your dates, pick-up point and preferences with the VIPCAR team. We confirm the practical details, availability and final quote directly before you travel.','Partagez vos dates, votre lieu de prise en charge et vos préférences avec l’équipe VIPCAR. Nous confirmons directement les détails pratiques, la disponibilité et le devis final avant votre départ.','شارك تواريخك ونقطة الاستلام وتفضيلاتك مع فريق VIPCAR. نؤكد التفاصيل العملية والتوفر وعرض السعر النهائي مباشرة قبل السفر.')}</p><SmartLink className="button" href={link(lang,'/booking')}>{copy[lang].book}<ArrowRight/></SmartLink></article><section className="section related-guides"><SectionHead eyebrow={text(lang,'Keep planning','Préparez la suite','واصل التخطيط')} title={text(lang,'More useful guides for your trip.','D’autres guides utiles pour votre séjour.','أدلة أخرى مفيدة لرحلتك.')}/><div className="journal-grid">{related.map(([key,item])=>{const relatedContent=articleLocale(key,item,lang);return <GuideCard key={key} image={item.image} tag={text(lang,'Travel guide','Guide pratique','دليل عملي')} title={relatedContent[0]} slug={key} lang={lang}/>})}</div></section><Cta lang={lang}/></main> }
 
-function DestinationHub({lang}) { return <section className="section destination-grid"><div className="destination-grid-intro"><p className="overline">{text(lang,'Local service areas','Zones desservies','مناطق الخدمة')}</p><h2>{text(lang,'Start with the place that matters to your trip.','Commencez par le lieu qui compte pour votre trajet.','ابدأ من المكان الأهم في رحلتك.')}</h2><p>{text(lang,'Explore the locations where VIPCAR can arrange rental, delivery or a private transfer. Availability outside these hubs is confirmed for each request.','Découvrez les zones où VIPCAR organise location, livraison ou transfert privé. La disponibilité hors de ces hubs est confirmée pour chaque demande.','اكتشف المناطق التي تنظم فيها VIPCAR التأجير والتوصيل والنقل الخاص. نؤكد التوفر خارج هذه المراكز لكل طلب.')}</p></div>{commercialLocations.map((x,i)=><article key={x.slug}><span>0{String(i+1).padStart(2,'0')}</span><MapPin/><h2>{x.name[languageIndex(lang)]}</h2><p>{text(lang,`Car rental in ${x.name[0]}, with delivery or collection coordinated around your itinerary.`,`Location de voiture à ${x.name[1]}, avec livraison ou prise en charge selon votre trajet.`,`تأجير سيارة في ${x.name[2]} مع توصيل أو استلام منسق حسب مسارك.`)}</p><div className="destination-links"><SmartLink className="text-link" href={link(lang,`/car-rental/${x.slug}`)}>{text(lang,'Car rental','Location','تأجير السيارات')}<ArrowRight/></SmartLink>{x.slug!=='gabes'&&<SmartLink className="text-link" href={link(lang,`/airport-transfers/${x.slug}`)}>{text(lang,'Airport transfer','Transfert aéroport','النقل من المطار')}<ArrowRight/></SmartLink>}{chauffeurHubs.includes(x.slug)&&<SmartLink className="text-link" href={link(lang,`/chauffeur/${x.slug}`)}>سائق خاص<ArrowRight/></SmartLink>}</div></article>)}</section> }
+function DestinationHub({lang}) { return <section className="section destination-grid"><div className="destination-grid-intro"><p className="overline">{text(lang,'Local service areas','Zones desservies','مناطق الخدمة')}</p><h2>{text(lang,'Start with the place that matters to your trip.','Commencez par le lieu qui compte pour votre trajet.','ابدأ من المكان الأهم في رحلتك.')}</h2><p>{text(lang,'Explore the locations where VIPCAR can arrange rental, delivery or a private transfer. Availability outside these hubs is confirmed for each request.','Découvrez les zones où VIPCAR organise location, livraison ou transfert privé. La disponibilité hors de ces hubs est confirmée pour chaque demande.','اكتشف المناطق التي تنظم فيها VIPCAR التأجير والتوصيل والنقل الخاص. نؤكد التوفر خارج هذه المراكز لكل طلب.')}</p></div>{commercialLocations.map((x,i)=><article key={x.slug}><span>0{String(i+1).padStart(2,'0')}</span><MapPin/><h2>{x.name[languageIndex(lang)]}</h2><p>{text(lang,`Car rental in ${x.name[0]}, with delivery or collection coordinated around your itinerary.`,`Location de voiture à ${x.name[1]}, avec livraison ou prise en charge selon votre trajet.`,`تأجير سيارة في ${x.name[2]} مع توصيل أو استلام منسق حسب مسارك.`)}</p><div className="destination-links"><SmartLink className="text-link" href={link(lang,`/car-rental/${x.slug}`)}>{text(lang,'Car rental','Location','تأجير السيارات')}<ArrowRight/></SmartLink>{x.slug!=='gabes'&&<SmartLink className="text-link" href={link(lang,`/airport-transfers/${x.slug}`)}>{text(lang,'Airport transfer','Transfert aéroport','النقل من المطار')}<ArrowRight/></SmartLink>}{chauffeurHubs.includes(x.slug)&&<SmartLink className="text-link" href={link(lang,`/chauffeur/${x.slug}`)}>{text(lang,'Private chauffeur','Chauffeur privé','سائق خاص')}<ArrowRight/></SmartLink>}</div></article>)}</section> }
 
 const legalPages={
   'terms-conditions':{en:['Terms & conditions','The rental, transfer and chauffeur conditions confirmed for each request apply to the agreed service, vehicle and dates.'],fr:['Conditions générales','Les conditions de location, de transfert et de chauffeur confirmées pour chaque demande s’appliquent au service, au véhicule et aux dates convenus.']},
@@ -1064,13 +1099,35 @@ const legalArabic = {
 
 function LegalPage({lang,slug}) { const data=legalPages[slug]; if(!data)return <NotFound lang={lang}/>; const a=lang==='ar'?legalArabic[slug]:data[lang]; return <main className="page"><PageHero image="interior.jpg" eyebrow={text(lang,'VIPCAR legal','VIPCAR juridique','الجوانب القانونية لـ VIPCAR')} title={a[0]} text={a[1]}/><section className="section legal-copy"><p className="overline">{text(lang,'Last updated','Dernière mise à jour','آخر تحديث')} · 18 August 2026</p><h2>{a[0]}</h2><p>{a[1]}</p><h3>{text(lang,'Direct confirmation','Confirmation directe','التأكيد المباشر')}</h3><p>{text(lang,'Your exact quote, availability, deposit and service conditions are confirmed directly with the VIPCAR team before you commit.','Votre devis exact, la disponibilité, la caution et les conditions du service sont confirmés directement avec l’équipe VIPCAR avant votre engagement.','يؤكد فريق VIPCAR مباشرة عرض السعر النهائي والتوفر والتأمين وشروط الخدمة قبل التزامك.')}</p><h3>{text(lang,'Contact','Contact','التواصل')}</h3><p><a href={WA}>{PHONE}</a> · <a href="mailto:info@vipcar.com.tn">info@vipcar.com.tn</a></p></section></main> }
 
-function ContactPage({lang}) { return <main className="page"><PageHero image="road-travel.jpg" eyebrow={text(lang,'VIPCAR contact','Contact VIPCAR','التواصل مع VIPCAR')} title={text(lang,'Let’s arrange the details.','Organisons les détails de votre trajet.','لننظم تفاصيل رحلتك.')} text={text(lang,'Questions, fixed quotes and corporate requests reach a real VIPCAR team, available 24/7.','Questions, devis fixes et demandes entreprises sont traités par une vraie équipe VIPCAR, disponible 24h/24.','تصلك أسئلتك وعروض الأسعار الثابتة وطلبات الشركات إلى فريق VIPCAR الحقيقي المتاح على مدار الساعة.')}/><section className="section contact-grid"><div className="contact-cards"><a href={WA}><MessageCircle/><strong>WhatsApp</strong><span>{PHONE}</span><small>{text(lang,'Fastest reply','Réponse la plus rapide','أسرع رد')}</small></a><a href="tel:+21655771077"><Headphones/><strong>{text(lang,'Call the team','Appeler l’équipe','اتصل بالفريق')}</strong><span>{PHONE}</span><small>{text(lang,'Available 24/7','Disponible 24h/24','متاح على مدار الساعة')}</small></a><a href="mailto:info@vipcar.com.tn"><BriefcaseBusiness/><strong>Email</strong><span>info@vipcar.com.tn</span><small>{text(lang,'Corporate accounts & invoicing','Comptes entreprises et facturation','حسابات الشركات والفوترة')}</small></a><div><MapPin/><strong>{text(lang,'Head office','Bureau principal','المقر الرئيسي')}</strong><span>Rue de la Feuille d'Érable, Lac 2, Tunis</span><small>Tunis · Gabès · Djerba</small></div></div><div className="contact-form"><h2>{text(lang,'Send a message','Envoyer un message','أرسل رسالة')}</h2><form onSubmit={e=>{e.preventDefault();const f=new FormData(e.currentTarget);location.href=`${WA}?text=${encodeURIComponent(`Hello VIPCAR, ${f.get('message')} My name is ${f.get('name')}. Contact: ${f.get('contact')}.`)}`}}><label>{copy[lang].yourName}<input required name="name"/></label><label>{text(lang,'Phone / WhatsApp / Email','Téléphone / WhatsApp / Email','الهاتف / واتساب / البريد الإلكتروني')}<input required name="contact"/></label><label>{text(lang,'Message','Message','الرسالة')}<textarea required name="message" rows="6"/></label><button className="button" type="submit">{text(lang,'Send via WhatsApp','Envoyer sur WhatsApp','إرسال عبر واتساب')}<MessageCircle/></button></form></div></section><Cta lang={lang}/></main> }
+async function submitContactForm(event, lang) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const button = form.querySelector('button[type="submit"]');
+  const fields = new FormData(form);
+  const body = {
+    name: String(fields.get('name') || '').trim(),
+    contact: String(fields.get('contact') || '').trim(),
+    message: String(fields.get('message') || '').trim(),
+    locale: lang,
+  };
+  if (button) button.disabled = true;
+  try {
+    await createContact(body, { locale: lang });
+    trackEvent('contact_submit', { form: 'contact', funnelStep: 'submit', context: { channel: 'contact' } });
+    location.href = `${WA}?text=${encodeURIComponent(`Hello VIPCAR, ${body.message} My name is ${body.name}. Contact: ${body.contact}.`)}`;
+  } catch (error) {
+    window.alert(contactErrorMessage(error, lang));
+    if (button) button.disabled = false;
+  }
+}
+
+function ContactPage({lang}) { return <main className="page"><PageHero image="road-travel.jpg" eyebrow={text(lang,'VIPCAR contact','Contact VIPCAR','التواصل مع VIPCAR')} title={text(lang,'Let’s arrange the details.','Organisons les détails de votre trajet.','لننظم تفاصيل رحلتك.')} text={text(lang,'Questions, fixed quotes and corporate requests reach a real VIPCAR team, available 24/7.','Questions, devis fixes et demandes entreprises sont traités par une vraie équipe VIPCAR, disponible 24h/24.','تصلك أسئلتك وعروض الأسعار الثابتة وطلبات الشركات إلى فريق VIPCAR الحقيقي المتاح على مدار الساعة.')}/><section className="section contact-grid"><div className="contact-cards"><a href={WA}><MessageCircle/><strong>WhatsApp</strong><span>{PHONE}</span><small>{text(lang,'Fastest reply','Réponse la plus rapide','أسرع رد')}</small></a><a href="tel:+21655771077"><Headphones/><strong>{text(lang,'Call the team','Appeler l’équipe','اتصل بالفريق')}</strong><span>{PHONE}</span><small>{text(lang,'Available 24/7','Disponible 24h/24','متاح على مدار الساعة')}</small></a><a href="mailto:info@vipcar.com.tn"><BriefcaseBusiness/><strong>Email</strong><span>info@vipcar.com.tn</span><small>{text(lang,'Corporate accounts & invoicing','Comptes entreprises et facturation','حسابات الشركات والفوترة')}</small></a><div><MapPin/><strong>{text(lang,'Head office','Bureau principal','المقر الرئيسي')}</strong><span>Rue de la Feuille d'Érable, Lac 2, Tunis</span><small>Tunis · Gabès · Djerba</small></div></div><div className="contact-form"><h2>{text(lang,'Send a message','Envoyer un message','أرسل رسالة')}</h2><form onSubmit={e=>submitContactForm(e,lang)}><label>{copy[lang].yourName}<input required name="name"/></label><label>{text(lang,'Phone / WhatsApp / Email','Téléphone / WhatsApp / Email','الهاتف / واتساب / البريد الإلكتروني')}<input required name="contact"/></label><label>{text(lang,'Message','Message','الرسالة')}<textarea required name="message" rows="6"/></label><button className="button" type="submit">{text(lang,'Send via WhatsApp','Envoyer sur WhatsApp','إرسال عبر واتساب')}<MessageCircle/></button></form></div></section><Cta lang={lang}/></main> }
 
 function FaqPage({lang}) { return <main className="page"><PageHero image="interior.jpg" eyebrow="VIPCAR FAQ" title={text(lang,'Useful answers before you travel.','Les réponses utiles avant votre voyage.','إجابات مفيدة قبل السفر.')} text={text(lang,'Rental requirements, airport collection, deposits, delivery and booking explained clearly.','Conditions de location, aéroports, caution, livraison et réservation expliqués clairement.','نوضح متطلبات التأجير والاستقبال من المطار والتأمين والتوصيل والحجز.')}/><Faq lang={lang}/><section className="section faq-extra"><div><p className="overline">{text(lang,'Still deciding?','Vous hésitez encore ?','هل ما زلت متردداً؟')}</p><h2>{text(lang,'Tell us what you need and we will confirm the practical details.','Dites-nous ce qu’il vous faut et nous confirmerons les détails pratiques.','أخبرنا بما تحتاجه وسنؤكد لك التفاصيل العملية.')}</h2></div><QuoteWidget lang={lang}/></section></main> }
 
-function LocationLinks({lang,currentSlug,airport}) { return <section className="section location-links"><SectionHead eyebrow={airport?text(lang,'More airport routes','Autres transferts aéroport','المزيد من مسارات المطارات'):text(lang,'More local routes','Autres destinations','المزيد من الوجهات المحلية')} title={airport?text(lang,'Arrive anywhere in Tunisia.','Arrivez partout en Tunisie.','صل إلى أي مكان في تونس.'):text(lang,'Choose where your journey starts.','Choisissez le point de départ de votre voyage.','اختر نقطة انطلاق رحلتك.')}/><div className="location-link-grid">{commercialLocations.filter(x=>x.slug!==currentSlug).slice(0,4).map(x=><SmartLink key={x.slug} className="location-link-card" href={link(lang,`${airport?'/airport-transfers':'/car-rental'}/${x.slug}`)}><MapPin size={18}/><strong>{airport?text(lang,`${x.airport} transfers`,`Transferts ${x.airport}`,`النقل من ${x.airport}`):text(lang,`Car rental in ${x.name[0]}`,`Location de voiture à ${x.name[1]}`,`تأجير السيارات في ${x.name[2]}`)}</strong><span>{text(lang,'Fixed quote confirmed for your itinerary','Devis fixe confirmé selon votre trajet','عرض سعر ثابت مؤكد حسب مسارك')}<ArrowRight size={15}/></span></SmartLink>)}</div></section> }
+function LocationLinks({lang,currentSlug,airport}) { return <section className="section location-links"><SectionHead eyebrow={airport?text(lang,'More airport routes','Autres transferts aéroport','المزيد من مسارات المطارات'):text(lang,'More local routes','Autres destinations','المزيد من الوجهات المحلية')} title={airport?text(lang,'Arrive anywhere in Tunisia.','Arrivez partout en Tunisie.','صل إلى أي مكان في تونس.'):text(lang,'Choose where your journey starts.','Choisissez le point de départ de votre voyage.','اختر نقطة انطلاق رحلتك.')}/><div className="location-link-grid">{commercialLocations.filter(x=>x.slug!==currentSlug).slice(0,4).map(x=><SmartLink key={x.slug} className="location-link-card" href={link(lang,`${airport?'/airport-transfers':'/car-rental'}/${x.slug}`)}><MapPin size={18}/><strong>{airport?text(lang,`${x.airport} transfers`,`Transferts ${airportLabel(x.airport,lang)}`,`النقل من ${airportLabel(x.airport,lang)}`):text(lang,`Car rental in ${x.name[0]}`,`Location de voiture à ${x.name[1]}`,`تأجير السيارات في ${x.name[2]}`)}</strong><span>{text(lang,'Fixed quote confirmed for your itinerary','Devis fixe confirmé selon votre trajet','عرض سعر ثابت مؤكد حسب مسارك')}<ArrowRight size={15}/></span></SmartLink>)}</div></section> }
 
-function LocationPage({lang,slug,airport=false}) { const item=commercialLocations.find(x=>x.slug===slug)||commercialLocations[0]; const title=airport?text(lang,`${item.airport} transfers`,`Transferts depuis ${item.airport}`,`النقل من ${item.airport}`):text(lang,`Car rental in ${item.name[0]}`,`Location de voiture à ${item.name[1]}`,`تأجير السيارات في ${item.name[2]}`); const pageText=airport?text(lang,`Pre-arranged airport transfers between ${item.airport}, hotels and destinations in Tunisia. Your driver tracks the flight and the final fixed quote is confirmed before travel.`,`Transferts aéroport organisés entre ${item.airport}, les hôtels et les destinations en Tunisie. Votre chauffeur suit le vol et le devis fixe est confirmé avant le départ.`,`نظم نقلك من ${item.airport} إلى الفنادق والوجهات في تونس مسبقاً. يتابع السائق الرحلة ويؤكد السعر الثابت قبل السفر.`):text(lang,`Arrange a VIPCAR rental in ${item.name[0]} with collection or delivery at ${item.airport}. Choose from economy, compact, SUV, executive and group vehicles, subject to availability for your dates.`,`Organisez votre location VIPCAR à ${item.name[1]} avec prise en charge ou livraison à ${item.airport}. Choisissez parmi les citadines, compactes, SUV, berlines et véhicules de groupe, selon disponibilité.`,`رتب تأجير سيارة من VIPCAR في ${item.name[2]} مع الاستلام أو التوصيل في ${item.airport}. اختر من السيارات الاقتصادية والمدمجة والدفع الرباعي والتنفيذية وسيارات المجموعات حسب التوفر.`); return <main className="page"><PageHero image={item.image} eyebrow={airport?text(lang,'Airport transfer Tunisia','Transfert aéroport Tunisie','النقل من مطار تونس') : text(lang,'Car rental Tunisia','Location de voiture Tunisie','تأجير السيارات في تونس')} title={title} text={pageText}/><section className="section location-detail"><div><p className="overline">{item.name[languageIndex(lang)]} · {text(lang,'Tunisia','Tunisie','تونس')}</p><h2>{airport?text(lang,'A calm arrival starts before you land.','Une arrivée sereine commence avant l’atterrissage.','وصول هادئ يبدأ قبل هبوط الطائرة.'):text(lang,'Your local mobility partner in Tunisia.','Votre partenaire mobilité en Tunisie.','شريكك المحلي للتنقل في تونس.')}</h2><p>{pageText}</p><ul><li><Check/>{text(lang,'Fixed quote confirmed directly','Devis fixe confirmé directement','عرض سعر ثابت مؤكد مباشرة')}</li><li><Check/>{text(lang,'Airport and hotel collection on request','Prise en charge à l’aéroport ou à l’hôtel sur demande','استلام من المطار أو الفندق عند الطلب')}</li><li><Check/>{text(lang,'English- and French-speaking team','Équipe francophone et anglophone','فريق يتحدث العربية والإنجليزية والفرنسية')}</li><li><Check/>{text(lang,'24/7 availability','Disponibilité 24h/24','متاح على مدار الساعة')}</li></ul></div><QuoteWidget lang={lang}/></section><LocalSeoContent lang={lang} item={item} airport={airport}/>{!airport&&<section className="section"><SectionHead eyebrow={text(lang,'Choose your vehicle','Choisissez votre véhicule','اختر سيارتك')} title={copy[lang].fleetTitle}/><div className="vehicle-grid featured">{fleet.slice(0,4).map(c=><VehicleCard key={c.slug} car={c} lang={lang}/>)}</div></section>}<LocationLinks lang={lang} currentSlug={slug} airport={airport}/><Faq lang={lang}/><Cta lang={lang}/></main> }
+function LocationPage({lang,slug,airport=false}) { const item=commercialLocations.find(x=>x.slug===slug)||commercialLocations[0]; const airportName=airportLabel(item.airport,lang); const title=airport?text(lang,`${item.airport} transfers`,`Transferts depuis ${airportName}`,`النقل من ${airportName}`):text(lang,`Car rental in ${item.name[0]}`,`Location de voiture à ${item.name[1]}`,`تأجير السيارات في ${item.name[2]}`); const pageText=airport?text(lang,`Pre-arranged airport transfers between ${item.airport}, hotels and destinations in Tunisia. Your driver tracks the flight and the final fixed quote is confirmed before travel.`,`Transferts aéroport organisés entre ${airportName}, les hôtels et les destinations en Tunisie. Votre chauffeur suit le vol et le devis fixe est confirmé avant le départ.`,`نظم نقلك من ${airportName} إلى الفنادق والوجهات في تونس مسبقاً. يتابع السائق الرحلة ويؤكد السعر الثابت قبل السفر.`):text(lang,`Arrange a VIPCAR rental in ${item.name[0]} with collection or delivery at ${item.airport}. Choose from economy, compact, SUV, executive and group vehicles, subject to availability for your dates.`,`Organisez votre location VIPCAR à ${item.name[1]} avec prise en charge ou livraison à ${airportName}. Choisissez parmi les citadines, compactes, SUV, berlines et véhicules de groupe, selon disponibilité.`,`رتب تأجير سيارة من VIPCAR في ${item.name[2]} مع الاستلام أو التوصيل في ${airportName}. اختر من السيارات الاقتصادية والمدمجة والدفع الرباعي والتنفيذية وسيارات المجموعات حسب التوفر.`); return <main className="page"><PageHero image={item.image} eyebrow={airport?text(lang,'Airport transfer Tunisia','Transfert aéroport Tunisie','النقل من مطار تونس') : text(lang,'Car rental Tunisia','Location de voiture Tunisie','تأجير السيارات في تونس')} title={title} text={pageText}/><section className="section location-detail"><div><p className="overline">{item.name[languageIndex(lang)]} · {text(lang,'Tunisia','Tunisie','تونس')}</p><h2>{airport?text(lang,'A calm arrival starts before you land.','Une arrivée sereine commence avant l’atterrissage.','وصول هادئ يبدأ قبل هبوط الطائرة.'):text(lang,'Your local mobility partner in Tunisia.','Votre partenaire mobilité en Tunisie.','شريكك المحلي للتنقل في تونس.')}</h2><p>{pageText}</p><ul><li><Check/>{text(lang,'Fixed quote confirmed directly','Devis fixe confirmé directement','عرض سعر ثابت مؤكد مباشرة')}</li><li><Check/>{text(lang,'Airport and hotel collection on request','Prise en charge à l’aéroport ou à l’hôtel sur demande','استلام من المطار أو الفندق عند الطلب')}</li><li><Check/>{text(lang,'English- and French-speaking team','Équipe francophone et anglophone','فريق يتحدث العربية والإنجليزية والفرنسية')}</li><li><Check/>{text(lang,'24/7 availability','Disponibilité 24h/24','متاح على مدار الساعة')}</li></ul></div><QuoteWidget lang={lang}/></section><LocalSeoContent lang={lang} item={item} airport={airport}/>{!airport&&<section className="section"><SectionHead eyebrow={text(lang,'Choose your vehicle','Choisissez votre véhicule','اختر سيارتك')} title={copy[lang].fleetTitle}/><div className="vehicle-grid featured">{fleet.slice(0,4).map(c=><VehicleCard key={c.slug} car={c} lang={lang}/>)}</div></section>}<LocationLinks lang={lang} currentSlug={slug} airport={airport}/><Faq lang={lang}/><Cta lang={lang}/></main> }
 
 function ChauffeurLocationPage({lang,slug}) { const item=commercialLocations.find(x=>x.slug===slug); if(!item||!chauffeurHubs.includes(slug))return <NotFound lang={lang}/>; const city=item.name[languageIndex(lang)]; const title=text(lang,`Private chauffeur in ${item.name[0]}`,`Chauffeur privé à ${item.name[1]}`,`سائق خاص في ${city}`); const pageText=text(lang,`Arrange a professional VIPCAR chauffeur in ${item.name[0]} for airport arrivals, business travel, events or a full day of private touring. Your schedule, vehicle and fixed quote are confirmed directly before travel.`,`Organisez un chauffeur privé VIPCAR à ${item.name[1]} pour vos arrivées à l’aéroport, déplacements professionnels, événements ou circuits à la journée. Votre programme, le véhicule et le devis fixe sont confirmés directement avant le départ.`,`رتب سائقاً خاصاً محترفاً من VIPCAR في ${city} للوصول من المطار أو رحلات العمل أو الفعاليات أو جولة ليوم كامل. نؤكد برنامجك والسيارة والسعر الثابت مباشرة قبل السفر.`); return <main className="page"><PageHero image="interior.jpg" eyebrow={text(lang,'Private chauffeur Tunisia','Chauffeur privé Tunisie','سائق خاص في تونس')} title={title} text={pageText}/><section className="section location-detail"><div><p className="overline">{city} · VIPCAR</p><h2>{text(lang,'A calm, capable driver for every important journey.','Un chauffeur fiable pour les trajets qui comptent.','سائق هادئ وموثوق لكل رحلة مهمة.')}</h2><p>{pageText}</p><ul><li><Check/>{text(lang,'English- and French-speaking drivers','Chauffeurs francophones et anglophones','سائقون يتحدثون العربية والإنجليزية والفرنسية')}</li><li><Check/>{text(lang,'Airport meet-and-greet and flight tracking','Accueil à l’aéroport et suivi du vol','استقبال في المطار ومتابعة الرحلة')}</li><li><Check/>{text(lang,'Hourly, half-day or full-day service','À l’heure, à la demi-journée ou à la journée','خدمة بالساعة أو نصف يوم أو يوم كامل')}</li><li><Check/>{text(lang,'Discreet service for business and events','Service discret pour affaires et événements','خدمة خاصة للأعمال والفعاليات')}</li></ul></div><QuoteWidget lang={lang}/></section><section className="section"><SectionHead eyebrow={text(lang,'Related local services','Services locaux associés','خدمات محلية مرتبطة')} title={text(lang,`More ways to move through ${item.name[0]}.`,`D’autres façons de vous déplacer à ${item.name[1]}.`,`مزيد من طرق التنقل في ${city}.`)}/><div className="location-link-grid"><SmartLink className="location-link-card" href={link(lang,`/car-rental/${slug}`)}><Car size={18}/><strong>{text(lang,`Car rental in ${item.name[0]}`,`Location de voiture à ${item.name[1]}`,`تأجير السيارات في ${city}`)}</strong><span>{text(lang,'Explore rental options','Voir les options de location','اكتشف خيارات التأجير')}<ArrowRight size={15}/></span></SmartLink>{slug!=='gabes'&&<SmartLink className="location-link-card" href={link(lang,`/airport-transfers/${slug}`)}><Plane size={18}/><strong>{text(lang,`${item.airport} transfer`,`Transfert ${item.airport}`,`النقل من ${locationLabel(item.airport,lang)}`)}</strong><span>{text(lang,'Plan your arrival','Organiser votre arrivée','نظم وصولك')}<ArrowRight size={15}/></span></SmartLink>}</div></section><Faq lang={lang}/><Cta lang={lang}/></main> }
 
@@ -1160,14 +1217,39 @@ function Seo({lang,parts}) { useEffect(()=>{let title=text(lang,'Car Rental in T
     if(!schema)return;
     try{const data=JSON.parse(schema.textContent);const service=data.find(x=>x['@type']==='Service');if(service)service.name=document.title;schema.textContent=JSON.stringify(data)}catch{}
   },[lang,parts.join('/')]);
+  useEffect(()=>{
+    const selector='meta[name="robots"]';
+    let meta=document.head.querySelector(selector);
+    if(!meta){meta=document.createElement('meta');meta.setAttribute('name','robots');document.head.appendChild(meta)}
+    meta.setAttribute('content',isKnownPublicRoute(parts)?'index, follow':'noindex, nofollow');
+    return()=>meta?.remove();
+  },[lang,parts.join('/')]);
   return null }
+
+function AnalyticsConsentBanner({ lang }) {
+  const [consent, setConsent] = useState(getAnalyticsConsent);
+  const t = copy[lang];
+  if (consent !== 'unknown') return null;
+  const choose = (value) => {
+    setAnalyticsConsent(value);
+    setConsent(value);
+    if (value === 'granted') {
+      initAnalytics();
+      trackPageView(location.pathname);
+    }
+  };
+  return <aside className="analytics-consent" aria-label={t.analyticsConsentTitle}>
+    <div><strong>{t.analyticsConsentTitle}</strong><p>{t.analyticsConsentBody}</p></div>
+    <div className="analytics-consent__actions"><button type="button" className="button" onClick={() => choose('granted')}>{t.analyticsAccept}</button><button type="button" className="analytics-consent__decline" onClick={() => choose('denied')}>{t.analyticsDecline}</button></div>
+  </aside>;
+}
 
  function App(){
   const [pathname,setPathname]=useState(location.pathname);
   const [currency,setCurrency]=useState(getInitialCurrency);
   useEffect(()=>{const h=()=>setPathname(location.pathname);addEventListener('popstate',h);return()=>removeEventListener('popstate',h)},[]);
   useEffect(()=>{try{localStorage.setItem(CURRENCY_STORAGE_KEY,currency)}catch{/* storage can be unavailable in private browsing */}},[currency]);
-  useEffect(()=>{if(!isAdminPathname(pathname))trackPageView(pathname)},[pathname]);
+  useEffect(()=>{if(!isAdminPathname(pathname)){initAnalytics();trackPageView(pathname)}},[pathname]);
   // Staff backoffice: same Vite app/port, path routing outside public locales.
   if(isAdminPathname(pathname)) return <AdminApp pathname={pathname}/>;
   const route=routeInfo();
@@ -1191,7 +1273,7 @@ function Seo({lang,parts}) { useEffect(()=>{let title=text(lang,'Car Rental in T
   else if(parts[0]==='legal'&&parts[1])page=<LegalPage lang={lang} slug={parts[1]}/>;
   else page=<NotFound lang={lang}/>;
   const routeKey = `${lang}/${parts.join('/')}`;
-  return <CurrencyContext.Provider value={{currency,setCurrency}}><><Seo lang={lang} parts={parts}/><Motion routeKey={routeKey}/><PageTransition routeKey={routeKey}/><a className="skip-link" href="#main-content">{lang==='en'?'Skip to main content':'Aller au contenu principal'}</a><Header lang={lang} home={!parts.length}/><div id="main-content">{page}</div><Footer lang={lang}/><FloatingWhatsApp lang={lang}/><SmartLink className="mobile-book" href={link(lang,'/booking')}>{copy[lang].book}<ArrowRight/></SmartLink></></CurrencyContext.Provider>;
+  return <CurrencyContext.Provider value={{currency,setCurrency}}><><Seo lang={lang} parts={parts}/><Motion routeKey={routeKey}/><PageTransition routeKey={routeKey}/><a className="skip-link" href="#main-content">{text(lang,'Skip to main content','Aller au contenu principal','انتقل إلى المحتوى الرئيسي')}</a><Header lang={lang} home={!parts.length}/><div id="main-content">{page}</div><Footer lang={lang}/><FloatingWhatsApp lang={lang}/><SmartLink className="mobile-book" href={link(lang,'/booking')}>{copy[lang].book}<ArrowRight/></SmartLink><AnalyticsConsentBanner lang={lang}/></></CurrencyContext.Provider>;
 }
 
 createRoot(document.getElementById('root')).render(<React.StrictMode><App/></React.StrictMode>);

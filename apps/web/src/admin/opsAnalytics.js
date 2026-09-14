@@ -8,8 +8,10 @@ export async function getOpsAnalytics(days = 30, opts = {}) {
   });
   return payload?.data || {
     days,
-    totals: { pageViews: 0, uniqueVisitors: 0, quoteRequests: 0 },
+    totals: { pageViews: 0, uniqueVisitors: 0, quoteStarts: 0, quoteRequests: 0, quoteAbandons: 0, contactRequests: 0 },
     daily: [],
     topPages: [],
+    topSources: [],
+    topLandingPages: [],
   };
 }

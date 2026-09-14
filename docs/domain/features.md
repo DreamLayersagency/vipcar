@@ -11,7 +11,7 @@ Source of truth for product features extracted from the current Vite SPA (`apps/
 
 ## Route map
 
-All public routes are prefixed with `/{lang}` where `lang` is `en` or `fr`. `/` redirects to `/en`.
+All public routes are prefixed with `/{lang}` where `lang` is `en`, `fr`, or `ar`. `/` redirects to `/en`.
 
 | Route | Current page | Backend owner (target) |
 |---|---|---|
@@ -122,7 +122,7 @@ SEO pages for rental / airport transfer / chauffeur by city. Same quote widget a
 - Legal: `terms-conditions`, `privacy-policy`, `cancellation-policy`
 - About, destinations intro, corporate copy
 
-All copy is bilingual EN/FR.
+All public copy is localized for EN/FR/AR.
 
 ### F-12 i18n and SEO
 

@@ -8,7 +8,12 @@
     "start:dev": "node ../../scripts/prisma.cjs --app fleet generate && nest start --watch",
     "prisma:generate": "node ../../scripts/prisma.cjs --app fleet generate",
     "prisma:migrate": "node ../../scripts/prisma.cjs --app fleet migrate",
-    "prisma:deploy": "node ../../scripts/prisma.cjs --app fleet deploy"
+    "prisma:deploy": "node ../../scripts/prisma.cjs --app fleet deploy",
+    "prisma:seed": "prisma db seed",
+    "seed": "node prisma/seed.cjs"
+  },
+  "prisma": {
+    "seed": "node prisma/seed.cjs"
   },
   "dependencies": {
     "@nestjs/common": "^11.1.3",

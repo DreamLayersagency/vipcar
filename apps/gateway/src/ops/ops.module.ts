@@ -10,6 +10,8 @@ import { OpsQuotesController } from './ops-quotes.controller';
 import { OpsReservationsController } from './ops-reservations.controller';
 import { OpsStaffController } from './ops-staff.controller';
 import { OpsAnalyticsController } from './ops-analytics.controller';
+import { OpsNotificationsController } from './ops-notifications.controller';
+import { OpsFollowUpController } from './ops-follow-up.controller';
 
 @Module({
   imports: [AuthModule],
@@ -24,6 +26,8 @@ import { OpsAnalyticsController } from './ops-analytics.controller';
     OpsReservationsController,
     OpsStaffController,
     OpsAnalyticsController,
+    OpsNotificationsController,
+    OpsFollowUpController,
   ],
 })
 export class OpsModule {}

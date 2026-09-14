@@ -9,9 +9,19 @@ const monorepoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), 
 export default defineConfig({
   envDir: monorepoRoot,
   plugins: [react()],
+  resolve: {
+    // npm workspaces hoist deps to the monorepo root
+    dedupe: ['react', 'react-dom', 'recharts'],
+  },
   server: {
     port: 5173,
     host: true,
+    fs: {
+      allow: [monorepoRoot],
+    },
+  },
+  optimizeDeps: {
+    include: ['recharts'],
   },
   preview: {
     port: 4173,

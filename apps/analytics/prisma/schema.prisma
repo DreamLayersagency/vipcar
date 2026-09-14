@@ -16,10 +16,18 @@ model AnalyticsEvent {
   locale    String?
   referrer  String?
   device    String?
+  source    String?
+  medium    String?
+  campaign  String?
+  landingPage String?
+  funnelStep String?
+  context   Json?
   createdAt DateTime @default(now())
 
   @@index([event, createdAt])
   @@index([createdAt])
   @@index([sessionId])
+  @@index([source, createdAt])
+  @@index([landingPage, createdAt])
   @@map("analytics_events")
 }

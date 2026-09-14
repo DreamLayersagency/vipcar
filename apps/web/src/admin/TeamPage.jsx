@@ -1,4 +1,5 @@
 import React from 'react';
+import { CheckCircle2, Mail, Phone, ShieldCheck, UserPlus, UsersRound } from 'lucide-react';
 import { ApiError } from '../api.js';
 import { createOpsStaff, listOpsStaff, validateStaffForm } from './opsStaff.js';
 
@@ -86,18 +87,35 @@ export function TeamPage({ locale, copy }) {
   };
 
   return (
-    <div className="admin-team">
-      <p className="admin-lead">{c.subtitle}</p>
+    <div className="admin-team admin-team--enhanced">
+      <section className="admin-team__hero">
+        <div>
+          <p className="admin-eyebrow">{c.createEyebrow}</p>
+          <h2>{c.title}</h2>
+          <p>{c.subtitle}</p>
+        </div>
+        <div className="admin-team__hero-stat">
+          <UsersRound size={20} aria-hidden="true" />
+          <strong>{staff.length}</strong>
+          <span>{c.listTitle}</span>
+        </div>
+      </section>
+
+      {error ? <ErrorBanner message={error} /> : null}
+
       <div className="admin-team__layout">
-        <section className="admin-panel admin-team__create">
+        <section className="admin-panel admin-team__create admin-team__card">
           <div className="admin-panel__heading">
             <div>
-              <p className="admin-eyebrow">{c.createEyebrow}</p>
+              <p className="admin-eyebrow"><UserPlus size={14} aria-hidden="true" /> {c.createEyebrow}</p>
               <h2>{c.createTitle}</h2>
             </div>
-            <span className="admin-team__badge">ops_agent</span>
+            <span className="admin-team__badge"><ShieldCheck size={13} aria-hidden="true" /> ops_agent</span>
           </div>
-          {error ? <ErrorBanner message={error} /> : null}
+          <div className="admin-team__create-hint">
+            <ShieldCheck size={16} aria-hidden="true" />
+            <span>{c.passwordHint}</span>
+          </div>
           {success ? <SuccessBanner message={success} /> : null}
           <form className="admin-team__form" onSubmit={submit} noValidate>
             <label className={`admin-field ${fieldErrors.name ? 'admin-field--invalid' : ''}`}>
@@ -133,13 +151,17 @@ export function TeamPage({ locale, copy }) {
           </form>
         </section>
 
-        <section className="admin-panel admin-team__list">
+        <section className="admin-panel admin-team__list admin-team__card">
           <div className="admin-panel__heading">
             <div>
-              <p className="admin-eyebrow">{c.listEyebrow}</p>
+              <p className="admin-eyebrow"><UsersRound size={14} aria-hidden="true" /> {c.listEyebrow}</p>
               <h2>{c.listTitle}</h2>
             </div>
             <span className="admin-team__count">{staff.length}</span>
+          </div>
+          <div className="admin-team__list-meta">
+            <span><CheckCircle2 size={14} aria-hidden="true" /> {c.adminRole} / {c.opsRole}</span>
+            <span>{loading ? c.loading : `${staff.length} ${c.listTitle.toLowerCase()}`}</span>
           </div>
           {loading ? <p className="admin-muted">{c.loading}</p> : null}
           {!loading && !staff.length && !error ? <p className="admin-muted">{c.empty}</p> : null}
@@ -150,10 +172,10 @@ export function TeamPage({ locale, copy }) {
                   <span className="admin-team__avatar">{String(member.name || member.email).slice(0, 1).toUpperCase()}</span>
                   <div className="admin-team__member-copy">
                     <strong>{member.name}</strong>
-                    <span>{member.email}</span>
-                    {member.phone ? <small>{member.phone}</small> : null}
+                    <span><Mail size={12} aria-hidden="true" /> {member.email}</span>
+                    {member.phone ? <small><Phone size={12} aria-hidden="true" /> {member.phone}</small> : null}
                   </div>
-                  <span className={`admin-chip ${member.isActive === false ? 'admin-chip--expired' : 'admin-chip--quoted'}`}>{member.isActive === false ? c.inactive : roleLabel(member.role, c)}</span>
+                  <span className={`admin-chip admin-team__role ${member.isActive === false ? 'admin-chip--expired' : 'admin-chip--quoted'}`}>{member.isActive === false ? c.inactive : roleLabel(member.role, c)}</span>
                 </article>
               ))}
             </div>

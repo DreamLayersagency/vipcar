@@ -14,7 +14,7 @@ import {
 } from '@vipcar/contracts';
 import { randomUUID } from 'crypto';
 import { defaultIfEmpty, firstValueFrom, timeout } from 'rxjs';
-import type { ChauffeurDuration, Quote, QuoteStatus } from '../../generated/prisma';
+import type { Channel, ChauffeurDuration, Quote, QuoteStatus } from '../../generated/prisma';
 import { BOOKING_NATS } from '../booking.constants';
 import { PrismaService } from '../prisma.service';
 import { assertServiceTypePayload } from '../service-type.payload';
@@ -54,6 +54,7 @@ export class QuotesService {
     const limit = dto.limit ?? 20;
     const where = {
       ...(dto.status ? { status: dto.status as QuoteStatus } : {}),
+      ...(dto.channel ? { channel: dto.channel as Channel } : {}),
     };
 
     const [quotes, total] = await this.prisma.$transaction([

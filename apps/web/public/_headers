@@ -1,0 +1,19 @@
+/admin
+  X-Robots-Tag: noindex, nofollow
+
+/admin/*
+  X-Robots-Tag: noindex, nofollow
+
+/en/login
+  X-Robots-Tag: noindex, nofollow
+/fr/login
+  X-Robots-Tag: noindex, nofollow
+/ar/login
+  X-Robots-Tag: noindex, nofollow
+
+/en/my-bookings
+  X-Robots-Tag: noindex, nofollow
+/fr/my-bookings
+  X-Robots-Tag: noindex, nofollow
+/ar/my-bookings
+  X-Robots-Tag: noindex, nofollow

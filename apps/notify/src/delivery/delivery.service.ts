@@ -2,6 +2,10 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
   DOMAIN_EVENTS,
+  type BookingConfirmedEventDto,
+  type ListOpsNotificationsDto,
+  type MarkOpsNotificationsReadDto,
+  type OpsNotificationDto,
   type DepositReleasedEventDto,
   type DispatchAssignedEventDto,
   type DispatchTripStatusEventDto,
@@ -86,6 +90,7 @@ export class DeliveryService {
    */
   async onQuoteCreated(event: QuoteCreatedEventDto): Promise<void> {
     try {
+      await this.createQuoteOpsNotification(event);
       const channels = this.enabledChannels();
       if (channels.length === 0) {
         this.logger.warn('No notify channels enabled; skipping enqueue');
@@ -138,6 +143,113 @@ export class DeliveryService {
     } catch (error: unknown) {
       this.logger.error(
         `Failed to enqueue quote.created ${event.eventId}`,
+        error instanceof Error ? error.stack : String(error),
+      );
+    }
+  }
+
+  /** Durable staff inbox notification; independent from customer delivery adapters. */
+  async onBookingConfirmed(event: BookingConfirmedEventDto): Promise<void> {
+    try {
+      const booking = event.booking;
+      await this.prisma.opsNotification.upsert({
+        where: { kind_entityId: { kind: 'new_reservation', entityId: booking.id } },
+        create: {
+          kind: 'new_reservation',
+          entityId: booking.id,
+          href: `/admin/reservations/${booking.quoteId}`,
+          payload: {
+            quoteId: booking.quoteId,
+            service: booking.type,
+            customerId: booking.customerId,
+            status: booking.status,
+          } as Prisma.InputJsonValue,
+        },
+        update: {},
+      });
+    } catch (error: unknown) {
+      this.logger.error(
+        `Failed to persist reservation notification ${event.eventId}`,
+        error instanceof Error ? error.stack : String(error),
+      );
+    }
+  }
+
+  async listOpsNotifications(
+    dto: ListOpsNotificationsDto,
+  ): Promise<{ data: OpsNotificationDto[] }> {
+    const rows = await this.prisma.opsNotification.findMany({
+      orderBy: { createdAt: 'desc' },
+      take: dto.limit ?? 50,
+      include: {
+        reads: {
+          where: { userId: dto.userId },
+          select: { id: true },
+        },
+      },
+    });
+
+    return {
+      data: rows.map((row) => ({
+        id: row.id,
+        kind: row.kind as OpsNotificationDto['kind'],
+        entityId: row.entityId,
+        href: row.href,
+        payload: (row.payload && typeof row.payload === 'object'
+          ? row.payload
+          : {}) as Record<string, unknown>,
+        createdAt: row.createdAt.toISOString(),
+        isRead: row.reads.length > 0,
+      })),
+    };
+  }
+
+  async markOpsNotificationsRead(
+    dto: MarkOpsNotificationsReadDto,
+  ): Promise<{ ok: true; count: number }> {
+    if (!dto.notificationIds.length) return { ok: true, count: 0 };
+    let count = 0;
+    for (const notificationId of dto.notificationIds) {
+      try {
+        await this.prisma.opsNotificationRead.create({
+          data: { notificationId, userId: dto.userId },
+        });
+        count += 1;
+      } catch (error: unknown) {
+        if (!this.isUniqueViolation(error)) throw error;
+      }
+    }
+    return { ok: true, count };
+  }
+
+  private async createQuoteOpsNotification(event: QuoteCreatedEventDto): Promise<void> {
+    try {
+      const quote = event.quote;
+      const isContact = quote.channel === 'contact';
+      await this.prisma.opsNotification.upsert({
+        where: {
+          kind_entityId: {
+            kind: isContact ? 'new_contact' : 'new_quote',
+            entityId: quote.id,
+          },
+        },
+        create: {
+          kind: isContact ? 'new_contact' : 'new_quote',
+          entityId: quote.id,
+          href: `/admin/quotes/${quote.id}`,
+          payload: {
+            customerName: quote.customerName,
+            customerEmail: quote.customerEmail,
+            customerPhone: quote.customerPhone,
+            service: quote.service,
+            channel: quote.channel,
+          } as Prisma.InputJsonValue,
+        },
+        update: {},
+      });
+    } catch (error: unknown) {
+      this.logger.error(
+        `Failed to persist quote notification ${event.eventId}`,
         error instanceof Error ? error.stack : String(error),
       );
     }
