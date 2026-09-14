@@ -28,7 +28,7 @@ if (skipPrerender) {
 }
 
 const PREVIEW_ORIGIN = 'http://127.0.0.1:4173';
-const langs = ['en', 'fr'];
+const langs = ['en', 'fr', 'ar'];
 const baseRoutes = [
   '',
   '/fleet',

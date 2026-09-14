@@ -35,6 +35,7 @@ import { apiWithAuth } from '../auth.js';
 /**
  * @param {{
  *   status?: string,
+ *   channel?: string,
  *   page?: number,
  *   limit?: number,
  *   locale?: 'en' | 'fr',
@@ -45,6 +46,7 @@ import { apiWithAuth } from '../auth.js';
 export async function listOpsQuotes(opts = {}) {
   const params = new URLSearchParams();
   if (opts.status) params.set('status', opts.status);
+  if (opts.channel) params.set('channel', opts.channel);
   if (opts.page) params.set('page', String(opts.page));
   if (opts.limit) params.set('limit', String(opts.limit));
   const q = params.toString();
@@ -174,4 +176,15 @@ export function formatDateRange(startAt, endAt, locale) {
 export function shortId(id) {
   if (!id || id.length < 10) return id || '—';
   return `${id.slice(0, 8)}…`;
+}
+
+/**
+ * Human-friendly quote reference for staff views. Keep the full UUID available
+ * in the record and URL, but avoid making it the visual focal point.
+ * @param {string | null | undefined} id
+ */
+export function quoteReference(id) {
+  if (!id) return '—';
+  const compact = String(id).replace(/-/g, '').slice(0, 6).toUpperCase();
+  return compact ? `QTE-${compact}` : '—';
 }

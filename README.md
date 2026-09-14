@@ -1,6 +1,6 @@
 # VIPCAR
 
-Bilingual (EN/FR) car rental, airport transfer, and chauffeur platform for Tunisia.
+Localized (EN/FR/AR) car rental, airport transfer, and chauffeur platform for Tunisia.
 
 - Public site: `apps/web` (Vite + React) — staff backoffice at `/admin` (same app/port, Phase J)
 - HTTP API: `apps/gateway` → NATS → `apps/identity`, `apps/catalog`, `apps/cms`, `apps/booking`, `apps/notify`, `apps/fleet`, `apps/billing`, `apps/dispatch`, `apps/analytics`

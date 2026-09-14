@@ -236,6 +236,11 @@ export class ListQuotesDto {
   status?: QuoteStatusLabel;
 
   @IsOptional()
+  @IsString()
+  @IsIn([...CHANNELS])
+  channel?: ChannelLabel;
+
+  @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(1)

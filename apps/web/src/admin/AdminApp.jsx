@@ -2,7 +2,6 @@ import React from 'react';
 import { ApiError, apiBaseUrl } from '../api';
 import {
   Building2,
-  BarChart3,
   Car,
   ClipboardList,
   FileText,
@@ -33,6 +32,7 @@ import { QuoteDetailPage, QuotesListPage } from './QuotesPages.jsx';
 import { VehicleFormPage, VehiclesListPage } from './VehiclesPages.jsx';
 import { TeamPage } from './TeamPage.jsx';
 import { AnalyticsPage } from './AnalyticsPage.jsx';
+import { AdminNotifications } from './AdminNotifications.jsx';
 
 /** @typedef {'dashboard' | 'login' | 'reservations' | 'reservation-detail' | 'quotes' | 'quote-detail' | 'vehicles' | 'vehicle-form' | 'articles' | 'article-form' | 'fleet' | 'dispatch' | 'corporate' | 'analytics' | 'team' | 'unknown'} AdminPage */
 /** @typedef {'loading' | 'ready' | 'denied'} AuthStatus */
@@ -219,7 +219,6 @@ function AdminShell({ page, title, user, locale, onLocale, onLogout, children })
     { id: 'articles', group: 'catalog', href: '/admin/articles', label: copy.nav.articles, icon: FileText },
     { id: 'fleet', group: 'operations', href: '/admin/fleet', label: copy.nav.fleet, icon: Gauge },
     { id: 'dispatch', group: 'operations', href: '/admin/dispatch', label: copy.nav.dispatch, icon: Route },
-    { id: 'analytics', group: 'operations', href: '/admin/analytics', label: copy.nav.analytics, icon: BarChart3 },
     { id: 'corporate', group: 'relationships', href: '/admin/corporate', label: copy.nav.corporate, icon: Building2 },
     { id: 'team', group: 'relationships', href: '/admin/team', label: copy.nav.team, icon: UsersRound },
   ];
@@ -294,6 +293,7 @@ function AdminShell({ page, title, user, locale, onLocale, onLogout, children })
             <p className="admin-topbar__title">{copy.staffBackoffice}</p>
           </div>
           <div className="admin-topbar__meta">
+            <AdminNotifications locale={locale} copy={copy} navigate={go} user={user} />
             <LocaleToggle locale={locale} onLocale={onLocale} />
             <span className="admin-topbar__user" title={user?.email || undefined}>
               {user?.name || user?.email || 'Staff'}
@@ -664,7 +664,7 @@ export function AdminApp({ pathname }) {
         ) : null}
         {page === 'fleet' ? <FleetPage locale={locale} copy={copy} /> : null}
         {page === 'dispatch' ? <DispatchPage locale={locale} copy={copy} /> : null}
-        {page === 'corporate' ? <CorporatePage locale={locale} copy={copy} /> : null}
+        {page === 'corporate' ? <CorporatePage locale={locale} copy={copy} navigate={go} /> : null}
         {page === 'analytics' ? <AnalyticsPage locale={locale} copy={copy} /> : null}
         {page === 'team' ? <TeamPage locale={locale} copy={copy} /> : null}
         {page === 'unknown' ? (

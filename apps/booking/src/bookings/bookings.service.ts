@@ -11,12 +11,15 @@ import {
   type AssignReservationUnitDto,
   type GetReservationDto,
   type ListReservationsDto,
+  type GetOpsFollowUpDto,
+  type OpsFollowUpDto,
   ListMyBookingsDto,
   NATS_PATTERNS,
   type ReservationDto,
   type ReservationStatusLabel,
   STAFF_ROLES,
   UpdateBookingStatusDto,
+  type UpdateOpsFollowUpDto,
   type BookingStatusLabel,
   type CalendarBlockDto,
   type ChauffeurDurationLabel,
@@ -214,6 +217,50 @@ export class BookingsService {
     }
 
     return { data: toReservationDto(quote) };
+  }
+
+  /** Staff-only complementary follow-up state; never changes quote or booking status. */
+  async getOpsFollowUp(
+    dto: GetOpsFollowUpDto,
+  ): Promise<{ data: OpsFollowUpDto }> {
+    const row = await this.prisma.opsFollowUp.findUnique({
+      where: { recordId: dto.recordId },
+    });
+    return {
+      data: {
+        recordId: dto.recordId,
+        status: row?.status ?? 'new',
+        updatedByUserId: row?.updatedByUserId ?? null,
+        createdAt: row?.createdAt?.toISOString() ?? null,
+        updatedAt: row?.updatedAt?.toISOString() ?? null,
+      },
+    };
+  }
+
+  async updateOpsFollowUp(
+    dto: UpdateOpsFollowUpDto,
+  ): Promise<{ data: OpsFollowUpDto }> {
+    const row = await this.prisma.opsFollowUp.upsert({
+      where: { recordId: dto.recordId },
+      create: {
+        recordId: dto.recordId,
+        status: dto.status,
+        updatedByUserId: dto.updatedByUserId,
+      },
+      update: {
+        status: dto.status,
+        updatedByUserId: dto.updatedByUserId,
+      },
+    });
+    return {
+      data: {
+        recordId: row.recordId,
+        status: row.status,
+        updatedByUserId: row.updatedByUserId,
+        createdAt: row.createdAt.toISOString(),
+        updatedAt: row.updatedAt.toISOString(),
+      },
+    };
   }
 
   /**

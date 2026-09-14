@@ -52,6 +52,14 @@ enum BookingStatus {
   no_show
 }
 
+enum OpsFollowUpStatus {
+  new
+  replied
+  awaiting_customer
+  confirmed
+  closed
+}
+
 model Quote {
   id                  String             @id @default(uuid())
   service             ServiceType
@@ -113,6 +121,19 @@ model Booking {
   @@index([customerId])
   @@index([startAt, endAt])
   @@map("bookings")
+}
+
+/// Complementary staff follow-up state; intentionally separate from booking/quote status.
+model OpsFollowUp {
+  id              String           @id @default(uuid())
+  recordId        String           @unique
+  status          OpsFollowUpStatus @default(new)
+  updatedByUserId String?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  @@index([updatedAt])
+  @@map("ops_follow_ups")
 }
 
 /// Transactional outbox — write in same TX as Quote; publish after commit.

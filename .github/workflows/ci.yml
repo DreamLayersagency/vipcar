@@ -72,5 +72,20 @@ jobs:
           DATABASE_URL: postgresql://vipcar:vipcar@localhost:5432/vipcar?schema=dispatch
         run: npm run build:dispatch
 
+      - name: Build notify
+        env:
+          DATABASE_URL: postgresql://vipcar:vipcar@localhost:5432/vipcar?schema=notify
+        run: npm run build:notify
+
+      - name: Build analytics
+        env:
+          DATABASE_URL: postgresql://vipcar:vipcar@localhost:5432/vipcar?schema=analytics
+        run: npm run build:analytics
+
+      - name: Build web
+        env:
+          SKIP_PRERENDER: true
+        run: npm run build:web
+
       - name: Build gateway
         run: npm run build:gateway

@@ -62,6 +62,8 @@ export const NATS_PATTERNS = {
       reservationsList: 'booking.ops.reservations.list',
       reservationGet: 'booking.ops.reservation.get',
       reservationAssign: 'booking.ops.reservation.assign',
+      followUpGet: 'booking.ops.followUp.get',
+      followUpUpdate: 'booking.ops.followUp.update',
     },
     confirm: 'booking.confirm',
     cancel: 'booking.cancel',
@@ -72,6 +74,10 @@ export const NATS_PATTERNS = {
   notify: {
     health: 'notify.health',
     send: 'notify.send',
+    notifications: {
+      list: 'notify.notifications.list',
+      markRead: 'notify.notifications.markRead',
+    },
   },
   fleet: {
     health: 'fleet.health',

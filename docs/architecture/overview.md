@@ -87,7 +87,7 @@ Roles: `customer`, `corporate_manager`, `driver`, `ops_agent`, `admin`.
 
 Indicative fleet prices remain display-only until a quote is confirmed.
 
-Keep EN/FR routes and prerender. Catalog/CMS APIs will feed the SPA later; do not break SEO URLs.
+Keep EN/FR/AR routes and prerender. Catalog/CMS APIs will feed the SPA later; do not break SEO URLs.
 
 **Staff backoffice:** Phase J lives as **client path routing** inside `apps/web` (`/admin/*` on the same Vite origin/port as the public site, e.g. `http://localhost:5173/admin`). It is **not** a second Vite app, not a second port, and does not need a separate CORS origin. Public SEO stays `/{en|fr}/...`; `/admin` is `noindex` and excluded from prerender/sitemap.
 

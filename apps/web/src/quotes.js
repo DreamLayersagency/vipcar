@@ -17,6 +17,32 @@ export async function createQuote(body, options = {}) {
   });
 }
 
+/** Persist a contact / corporate enquiry in the same operational inbox as quotes. */
+export async function createContact(body, options = {}) {
+  return apiWithAuth('/v1/contact', {
+    method: 'POST',
+    body,
+    token: options.token,
+    locale: options.locale,
+    signal: options.signal,
+  });
+}
+
+export function contactErrorMessage(error, lang) {
+  if (error instanceof ApiError && (error.code === 'SERVICE_UNAVAILABLE' || error.status >= 500)) {
+    return lang === 'en'
+      ? 'The contact service is temporarily unavailable. Please retry or contact us on WhatsApp.'
+      : lang === 'ar'
+        ? 'خدمة التواصل غير متاحة مؤقتاً. أعد المحاولة أو تواصل معنا عبر واتساب.'
+        : 'Le service de contact est temporairement indisponible. Réessayez ou contactez-nous sur WhatsApp.';
+  }
+  return lang === 'en'
+    ? 'We could not save your message. Please try again or contact us on WhatsApp.'
+    : lang === 'ar'
+      ? 'تعذر حفظ رسالتك. أعد المحاولة أو تواصل معنا عبر واتساب.'
+      : 'Impossible d’enregistrer votre message. Réessayez ou contactez-nous sur WhatsApp.';
+}
+
 /**
  * Short, safe reference shown to customers after a request is saved.
  * The full quote UUID remains the correlation key in the API and backoffice.

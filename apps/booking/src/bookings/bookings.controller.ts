@@ -6,10 +6,12 @@ import {
   DOMAIN_EVENTS,
   GetBookingDto,
   GetReservationDto,
+  GetOpsFollowUpDto,
   ListReservationsDto,
   ListMyBookingsDto,
   NATS_PATTERNS,
   UpdateBookingStatusDto,
+  UpdateOpsFollowUpDto,
   type AssignReservationUnitDto,
   type DispatchTripCompletedEventDto,
   type PaymentCapturedEventDto,
@@ -43,6 +45,16 @@ export class BookingsController {
   @MessagePattern(NATS_PATTERNS.booking.ops.reservationAssign)
   assignReservationUnit(@Payload() dto: AssignReservationUnitDto) {
     return this.bookings.assignReservationUnit(dto);
+  }
+
+  @MessagePattern(NATS_PATTERNS.booking.ops.followUpGet)
+  getOpsFollowUp(@Payload() dto: GetOpsFollowUpDto) {
+    return this.bookings.getOpsFollowUp(dto);
+  }
+
+  @MessagePattern(NATS_PATTERNS.booking.ops.followUpUpdate)
+  updateOpsFollowUp(@Payload() dto: UpdateOpsFollowUpDto) {
+    return this.bookings.updateOpsFollowUp(dto);
   }
 
   @MessagePattern(NATS_PATTERNS.booking.confirm)

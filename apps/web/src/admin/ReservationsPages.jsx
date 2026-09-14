@@ -11,9 +11,11 @@ import {
   getOpsReservation,
   listOpsReservations,
   patchOpsReservationPrice,
+  reservationReference,
   shortId,
   updateOpsReservationStatus,
 } from './opsReservations.js';
+import { WorkflowStatusBadge, WorkflowStatusPanel } from './WorkflowStatus.jsx';
 
 const SERVICES = ['rental', 'transfer', 'chauffeur'];
 const CHANNELS = ['web', 'whatsapp', 'staff', 'contact'];
@@ -214,6 +216,7 @@ export function ReservationsListPage({ locale, copy, navigate }) {
                   <th>{q.colTrip}</th>
                   <th>{q.colDates}</th>
                   <th>{q.colStatus}</th>
+                  <th>{copy.workflow.column}</th>
                   <th>{q.colPrice}</th>
                   <th>{q.colActions}</th>
                 </tr>
@@ -227,7 +230,7 @@ export function ReservationsListPage({ locale, copy, navigate }) {
                     <tr key={row.id}>
                       <td>
                         <div className="admin-cell-stack">
-                          <strong className="admin-mono">{shortId(row.id)}</strong>
+                          <strong className="admin-mono" title={row.id}>{reservationReference(row.id)}</strong>
                           <span className="admin-muted">{formatDateTime(row.createdAt, locale)}</span>
                         </div>
                       </td>
@@ -245,6 +248,7 @@ export function ReservationsListPage({ locale, copy, navigate }) {
                       </td>
                       <td className="admin-cell-clamp">{formatDateRange(trip.startAt, trip.endAt, locale)}</td>
                       <td><StatusChip status={row.status} labels={q.statuses} /></td>
+                      <td><WorkflowStatusBadge recordId={row.id} copy={copy} /></td>
                       <td>{value != null ? formatTnd(value, locale) : <span className="admin-muted">{q.noValue}</span>}</td>
                       <td>
                         <Link className="admin-btn admin-btn--ghost admin-btn--sm" href={`/admin/reservations/${row.id}`} navigate={navigate}>{q.open}</Link>
@@ -451,20 +455,63 @@ export function ReservationDetailPage({ reservationId, locale, copy, navigate })
 
       {!loading && reservation ? (
         <>
-          <header className="admin-detail-head">
-            <div>
-              <p className="admin-muted admin-mono">{r.id}</p>
+          <header className="admin-detail-hero">
+            <div className="admin-detail-hero__identity">
+              <p className="admin-detail-hero__eyebrow">{copy.detail.reservationEyebrow}</p>
+              <p className="admin-detail-hero__reference admin-mono" title={r.id}>
+                {reservationReference(r.id)}
+              </p>
               <h2 className="admin-detail-name">{r.customer?.name || q.detailTitle}</h2>
-              <p className="admin-lead">
-                {q.created} {formatDateTime(r.createdAt, locale)}
-                {r.updatedAt ? ` · ${q.updated} ${formatDateTime(r.updatedAt, locale)}` : ''}
+              <p className="admin-detail-hero__meta">
+                <span>{copy.detail.created} {formatDateTime(r.createdAt, locale)}</span>
+                {r.updatedAt ? <span>{copy.detail.updated} {formatDateTime(r.updatedAt, locale)}</span> : null}
               </p>
             </div>
-            <StatusChip status={r.status} labels={q.statuses} />
+            <div className="admin-detail-hero__status">
+              <span className="admin-detail-hero__status-label">{copy.detail.systemStatus}</span>
+              <StatusChip status={r.status} labels={q.statuses} />
+              <div className="admin-detail-hero__workflow">
+                <span>{copy.detail.workflowStatus}</span>
+                <WorkflowStatusBadge recordId={r.id} copy={copy} />
+              </div>
+            </div>
           </header>
 
+          <div className="admin-detail-overview" aria-label={q.detailTitle}>
+            <div className="admin-detail-overview__item">
+              <span>{copy.detail.service}</span>
+              <strong>{q.services[trip.service] || trip.service || '—'}</strong>
+            </div>
+            <div className="admin-detail-overview__item admin-detail-overview__item--wide">
+              <span>{copy.detail.route}</span>
+              <strong title={`${trip.pickupLabel || ''} → ${trip.dropoffLabel || ''}`}>
+                {trip.pickupLabel || trip.dropoffLabel
+                  ? `${trip.pickupLabel || '—'} → ${trip.dropoffLabel || '—'}`
+                  : copy.detail.noRoute}
+              </strong>
+            </div>
+            <div className="admin-detail-overview__item">
+              <span>{copy.detail.dates}</span>
+              <strong>{trip.startAt ? formatDateRange(trip.startAt, trip.endAt, locale) : copy.detail.noDates}</strong>
+            </div>
+            <div className="admin-detail-overview__item">
+              <span>{copy.detail.value}</span>
+              <strong>
+                {booking?.priceTnd != null
+                  ? `${formatTnd(booking.priceTnd, locale)} TND`
+                  : r.quote?.confirmedPriceTnd != null
+                    ? `${formatTnd(r.quote.confirmedPriceTnd, locale)} TND`
+                    : r.quote?.indicativePriceTnd != null
+                      ? `~${formatTnd(r.quote.indicativePriceTnd, locale)} TND`
+                      : copy.detail.noValue}
+              </strong>
+            </div>
+          </div>
+
+          <WorkflowStatusPanel recordId={r.id} copy={copy} />
+
           <div className="admin-detail-grid">
-            <section className="admin-panel">
+            <section className="admin-panel admin-detail-card admin-detail-card--primary">
               <h3>{q.customerSection}</h3>
               <dl className="admin-dl">
                 <div>
@@ -494,7 +541,7 @@ export function ReservationDetailPage({ reservationId, locale, copy, navigate })
               </dl>
             </section>
 
-            <section className="admin-panel">
+            <section className="admin-panel admin-detail-card admin-detail-card--primary">
               <h3>{q.tripSection}</h3>
               <dl className="admin-dl">
                 <div>
@@ -540,7 +587,7 @@ export function ReservationDetailPage({ reservationId, locale, copy, navigate })
               </dl>
             </section>
 
-            <section className="admin-panel">
+            <section className="admin-panel admin-detail-card admin-detail-card--secondary">
               <h3>{q.bookingSection}</h3>
               {booking ? (
                 <dl className="admin-dl">
@@ -576,7 +623,7 @@ export function ReservationDetailPage({ reservationId, locale, copy, navigate })
               )}
             </section>
 
-            <section className="admin-panel">
+            <section className="admin-panel admin-detail-card admin-detail-card--secondary">
               <h3>{q.resourcesSection}</h3>
               <dl className="admin-dl">
                 <div>
@@ -594,7 +641,7 @@ export function ReservationDetailPage({ reservationId, locale, copy, navigate })
               </dl>
             </section>
 
-            <section className="admin-panel">
+            <section className="admin-panel admin-detail-card admin-detail-card--action">
               <h3>{q.priceSection}</h3>
               <dl className="admin-dl">
                 <div>
@@ -640,7 +687,7 @@ export function ReservationDetailPage({ reservationId, locale, copy, navigate })
               )}
             </section>
 
-            <section className="admin-panel">
+            <section className="admin-panel admin-detail-card admin-detail-card--action">
               <h3>{q.confirm}</h3>
               {canConfirm ? (
                 <form className="admin-form" onSubmit={confirmReservation}>
@@ -700,7 +747,7 @@ export function ReservationDetailPage({ reservationId, locale, copy, navigate })
             </section>
 
             {booking ? (
-              <section className="admin-panel">
+              <section className="admin-panel admin-detail-card admin-detail-card--action">
                 <h3>{q.assignSection}</h3>
                 <form className="admin-form" onSubmit={assignUnit}>
                   <label className="admin-field">
@@ -728,7 +775,7 @@ export function ReservationDetailPage({ reservationId, locale, copy, navigate })
             ) : null}
 
             {booking ? (
-              <section className="admin-panel">
+              <section className="admin-panel admin-detail-card admin-detail-card--action">
                 <h3>{q.statusSection}</h3>
                 <form className="admin-form" onSubmit={updateStatus}>
                   <label className="admin-field">

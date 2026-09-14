@@ -3,10 +3,13 @@ import { EventPattern, MessagePattern, Payload } from '@nestjs/microservices';
 import {
   DOMAIN_EVENTS,
   NATS_PATTERNS,
+  type BookingConfirmedEventDto,
   type DepositReleasedEventDto,
   type DispatchAssignedEventDto,
   type DispatchTripStatusEventDto,
   type QuoteCreatedEventDto,
+  ListOpsNotificationsDto,
+  MarkOpsNotificationsReadDto,
 } from '@vipcar/contracts';
 import { DeliveryService } from './delivery.service';
 
@@ -22,6 +25,21 @@ export class DeliveryController {
   @EventPattern(DOMAIN_EVENTS.bookingQuoteCreated)
   async onQuoteCreated(@Payload() event: QuoteCreatedEventDto): Promise<void> {
     await this.delivery.onQuoteCreated(event);
+  }
+
+  @EventPattern(DOMAIN_EVENTS.bookingConfirmed)
+  async onBookingConfirmed(@Payload() event: BookingConfirmedEventDto): Promise<void> {
+    await this.delivery.onBookingConfirmed(event);
+  }
+
+  @MessagePattern(NATS_PATTERNS.notify.notifications.list)
+  listOpsNotifications(@Payload() dto: ListOpsNotificationsDto) {
+    return this.delivery.listOpsNotifications(dto);
+  }
+
+  @MessagePattern(NATS_PATTERNS.notify.notifications.markRead)
+  markOpsNotificationsRead(@Payload() dto: MarkOpsNotificationsReadDto) {
+    return this.delivery.markOpsNotificationsRead(dto);
   }
 
   @EventPattern(DOMAIN_EVENTS.billingDepositReleased)

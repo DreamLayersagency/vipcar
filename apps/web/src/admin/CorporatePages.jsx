@@ -1,18 +1,14 @@
 import React from 'react';
+import { ArrowUpRight, Building2, Mail, Phone, RefreshCw, UsersRound } from 'lucide-react';
 import { ApiError } from '../api.js';
 import {
-  createCorporateAccount,
-  isUuid,
-  linkCorporateManager,
-  listCorporateAccounts,
-  shortId,
-  validateCreateForm,
-  validateLinkForm,
-} from './opsCorporate.js';
+  formatDateRange,
+  formatDateTime,
+  listOpsQuotes,
+  quoteReference,
+} from './opsQuotes.js';
+import { WorkflowStatusBadge } from './WorkflowStatus.jsx';
 
-/**
- * @param {{ message: string, onRetry?: () => void, retryLabel?: string }} props
- */
 function ErrorBanner({ message, onRetry, retryLabel }) {
   return (
     <div className="admin-banner admin-banner--error" role="alert">
@@ -26,655 +22,206 @@ function ErrorBanner({ message, onRetry, retryLabel }) {
   );
 }
 
-/**
- * @param {{ message: string }} props
- */
-function SuccessBanner({ message }) {
-  return (
-    <div className="admin-banner admin-banner--ok" role="status">
-      {message}
-    </div>
-  );
-}
-
-function TableSkeleton() {
-  return (
-    <div className="admin-table-wrap" aria-hidden="true">
-      <table className="admin-table admin-table--skeleton">
-        <thead>
-          <tr>
-            {Array.from({ length: 5 }).map((_, i) => (
-              <th key={i}>
-                <span className="admin-skel" />
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {Array.from({ length: 4 }).map((_, r) => (
-            <tr key={r}>
-              {Array.from({ length: 5 }).map((__, c) => (
-                <td key={c}>
-                  <span className="admin-skel" />
-                </td>
-              ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
-/**
- * @param {{ active: boolean, labels: { active: string, inactive: string } }} props
- */
-function ActiveChip({ active, labels }) {
-  return (
-    <span
-      className={`admin-chip ${active ? 'admin-chip--quoted' : 'admin-chip--expired'}`}
-      title={active ? 'active' : 'inactive'}
-    >
-      {active ? labels.active : labels.inactive}
-    </span>
-  );
-}
-
-/**
- * @param {unknown} err
- * @param {string} fallback
- * @param {string} [adminOnly]
- */
-function errorMessage(err, fallback, adminOnly) {
-  if (err instanceof ApiError) {
-    if (err.status === 403 && adminOnly) return adminOnly;
-    return err.message || fallback;
+function parseCorporateNotes(notes) {
+  const fields = {};
+  for (const line of String(notes || '').split('\n')) {
+    const separator = line.indexOf(':');
+    if (separator <= 0) continue;
+    const key = line.slice(0, separator).trim().toLowerCase();
+    const value = line.slice(separator + 1).trim();
+    if (key && value) fields[key] = value;
   }
-  return fallback;
+  return fields;
 }
 
-/**
- * @param {{
- *   locale: 'en' | 'fr',
- *   copy: ReturnType<import('./i18n.js').t>,
- * }} props
- */
-export function CorporatePage({ locale, copy }) {
+function isCorporateLead(quote) {
+  return quote.channel === 'contact' && /^company\s*:/im.test(String(quote.notes || ''));
+}
+
+function corporateLeadFromQuote(quote) {
+  const fields = parseCorporateNotes(quote.notes);
+  return {
+    ...quote,
+    fields,
+    company: fields.company || '—',
+    teamSize: fields['team size'] || (quote.passengers ? String(quote.passengers) : '—'),
+    pickup: fields['pick-up'] || quote.pickupLabel || '—',
+    destination: fields['destination / return'] || quote.dropoffLabel || '—',
+    requestDate: fields['requested date'] || fields['rental dates'] || null,
+    additionalNotes: fields['additional notes'] || null,
+  };
+}
+
+function serviceLabel(service, copy) {
+  return copy.services?.[service] || service || '—';
+}
+
+function LeadCard({ lead, copy, navigate }) {
   const c = copy.corporate;
+  const leadLocale = lead.language === 'fr' ? 'fr' : 'en';
+  return (
+    <article className="admin-corporate__lead-card">
+      <header className="admin-corporate__lead-head">
+        <div className="admin-corporate__lead-identity">
+          <span className="admin-corporate__company-icon" aria-hidden="true">
+            <Building2 size={17} />
+          </span>
+          <div>
+            <p className="admin-eyebrow">{lead.company}</p>
+            <h2>{lead.customerName}</h2>
+            <span className="admin-corporate__reference" title={lead.id}>
+              {quoteReference(lead.id)}
+            </span>
+          </div>
+        </div>
+        <WorkflowStatusBadge recordId={lead.id} copy={copy} />
+      </header>
 
-  const [rows, setRows] = React.useState(
-    /** @type {import('./opsCorporate.js').CorporateAccount[]} */ ([]),
+      <div className="admin-corporate__contact-row">
+        <a
+          href={lead.customerEmail ? `mailto:${lead.customerEmail}` : undefined}
+          className={!lead.customerEmail ? 'is-disabled' : undefined}
+        >
+          <Mail size={14} aria-hidden="true" />
+          {lead.customerEmail || c.noEmail}
+        </a>
+        <a href={lead.customerPhone ? `tel:${lead.customerPhone}` : undefined}>
+          <Phone size={14} aria-hidden="true" />
+          {lead.customerPhone || c.noPhone}
+        </a>
+      </div>
+
+      <div className="admin-corporate__lead-facts">
+        <div>
+          <span>{c.service}</span>
+          <strong>{serviceLabel(lead.service, c)}</strong>
+        </div>
+        <div>
+          <span>{c.teamSize}</span>
+          <strong>{lead.teamSize}</strong>
+        </div>
+        <div className="admin-corporate__lead-fact--wide">
+          <span>{c.route}</span>
+          <strong title={`${lead.pickup} → ${lead.destination}`}>
+            {lead.pickup} → {lead.destination}
+          </strong>
+        </div>
+        <div className="admin-corporate__lead-fact--wide">
+          <span>{c.dates}</span>
+          <strong>
+            {lead.requestDate || formatDateRange(lead.startAt, lead.endAt, leadLocale)}
+          </strong>
+        </div>
+      </div>
+
+      {lead.additionalNotes ? (
+        <p className="admin-corporate__lead-notes">{lead.additionalNotes}</p>
+      ) : null}
+
+      <footer className="admin-corporate__lead-foot">
+        <time dateTime={lead.createdAt}>
+          {c.received} {formatDateTime(lead.createdAt, leadLocale)}
+        </time>
+        <button
+          type="button"
+          className="admin-btn admin-btn--ghost admin-btn--sm"
+          onClick={() => navigate(`/admin/quotes/${lead.id}`)}
+        >
+          {c.openRequest}
+          <ArrowUpRight size={14} aria-hidden="true" />
+        </button>
+      </footer>
+    </article>
   );
-  const [meta, setMeta] = React.useState({ page: 1, limit: 20, total: 0 });
-  const [page, setPage] = React.useState(1);
+}
+
+export function CorporatePage({ locale, copy, navigate }) {
+  const c = copy.corporate;
+  const [leads, setLeads] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
-  const [listError, setListError] = React.useState('');
-  const [selectedId, setSelectedId] = React.useState('');
-
-  const [createForm, setCreateForm] = React.useState({
-    name: '',
-    billingEmail: '',
-    notes: '',
-  });
-  const [createErrors, setCreateErrors] = React.useState(
-    /** @type {Record<string, string>} */ ({}),
-  );
-  const [createBusy, setCreateBusy] = React.useState(false);
-  const [createError, setCreateError] = React.useState('');
-  const [createOk, setCreateOk] = React.useState('');
-
-  const [linkMode, setLinkMode] = React.useState(/** @type {'link' | 'invite'} */ ('link'));
-  const [linkForm, setLinkForm] = React.useState({
-    corporateAccountId: '',
-    userId: '',
-    email: '',
-    name: '',
-    password: '',
-    phone: '',
-    locale: /** @type {'en' | 'fr'} */ (locale),
-  });
-  const [linkErrors, setLinkErrors] = React.useState(
-    /** @type {Record<string, string>} */ ({}),
-  );
-  const [linkBusy, setLinkBusy] = React.useState(false);
-  const [linkError, setLinkError] = React.useState('');
-  const [linkOk, setLinkOk] = React.useState('');
-
+  const [error, setError] = React.useState('');
   const [reloadKey, setReloadKey] = React.useState(0);
-  const refresh = () => setReloadKey((k) => k + 1);
+
+  const refresh = React.useCallback(() => setReloadKey((key) => key + 1), []);
+
+  const load = React.useCallback(async (signal) => {
+    setLoading(true);
+    setError('');
+    try {
+      const result = await listOpsQuotes({
+        channel: 'contact',
+        page: 1,
+        limit: 100,
+        locale,
+        signal,
+      });
+      setLeads(result.data.filter(isCorporateLead).map(corporateLeadFromQuote));
+    } catch (err) {
+      if (err?.name === 'AbortError') return;
+      setLeads([]);
+      setError(err instanceof ApiError ? err.message || c.error : c.error);
+    } finally {
+      if (!signal?.aborted) setLoading(false);
+    }
+  }, [c.error, locale]);
 
   React.useEffect(() => {
     const controller = new AbortController();
-    setLoading(true);
-    setListError('');
-    listCorporateAccounts({
-      page,
-      limit: 20,
-      locale,
-      signal: controller.signal,
-    })
-      .then((result) => {
-        if (controller.signal.aborted) return;
-        setRows(result.data);
-        setMeta(result.meta);
-      })
-      .catch((err) => {
-        if (err?.name === 'AbortError') return;
-        setListError(errorMessage(err, c.error, c.adminOnly));
-        setRows([]);
-      })
-      .finally(() => {
-        if (!controller.signal.aborted) setLoading(false);
-      });
+    load(controller.signal);
     return () => controller.abort();
-  }, [page, locale, c.error, c.adminOnly, reloadKey]);
-
-  const selectAccount = (account) => {
-    setSelectedId(account.id);
-    setLinkForm((prev) => ({ ...prev, corporateAccountId: account.id }));
-    setLinkErrors((prev) => {
-      if (!prev.corporateAccountId) return prev;
-      const next = { ...prev };
-      delete next.corporateAccountId;
-      return next;
-    });
-  };
-
-  const onCreate = async (e) => {
-    e.preventDefault();
-    if (createBusy) return;
-    setCreateOk('');
-    setCreateError('');
-    const errors = validateCreateForm(createForm);
-    setCreateErrors(errors);
-    if (Object.keys(errors).length) return;
-
-    setCreateBusy(true);
-    try {
-      const account = await createCorporateAccount(createForm, { locale });
-      setCreateOk(c.createdOk.replace('{name}', account?.name || createForm.name));
-      setCreateForm({ name: '', billingEmail: '', notes: '' });
-      if (account?.id) {
-        setSelectedId(account.id);
-        setLinkForm((prev) => ({ ...prev, corporateAccountId: account.id }));
-      }
-      setPage(1);
-      refresh();
-    } catch (err) {
-      setCreateError(errorMessage(err, c.createError, c.adminOnly));
-    } finally {
-      setCreateBusy(false);
-    }
-  };
-
-  const onLink = async (e) => {
-    e.preventDefault();
-    if (linkBusy) return;
-    setLinkOk('');
-    setLinkError('');
-    const errors = validateLinkForm({ ...linkForm, mode: linkMode });
-    setLinkErrors(errors);
-    if (Object.keys(errors).length) return;
-
-    const accountId = linkForm.corporateAccountId.trim();
-    setLinkBusy(true);
-    try {
-      const manager = await linkCorporateManager(
-        accountId,
-        linkMode === 'invite'
-          ? {
-              email: linkForm.email,
-              name: linkForm.name,
-              password: linkForm.password,
-              phone: linkForm.phone || undefined,
-              locale: linkForm.locale,
-            }
-          : {
-              userId: linkForm.userId || undefined,
-              email: linkForm.email || undefined,
-            },
-        { locale },
-      );
-      setLinkOk(
-        c.linkedOk.replace('{email}', manager?.email || linkForm.email || manager?.id || ''),
-      );
-      setLinkForm((prev) => ({
-        ...prev,
-        userId: '',
-        email: '',
-        name: '',
-        password: '',
-        phone: '',
-      }));
-    } catch (err) {
-      setLinkError(errorMessage(err, c.linkError, c.adminOnly));
-    } finally {
-      setLinkBusy(false);
-    }
-  };
-
-  const fieldError = (map, key) => {
-    const code = map[key];
-    if (!code) return '';
-    return c.fieldErrors[code] || c.fieldErrors.invalid;
-  };
-
-  const totalPages = Math.max(1, Math.ceil((meta.total || 0) / (meta.limit || 20)));
+  }, [load, reloadKey]);
 
   return (
-    <div className="admin-corporate">
-      <p className="admin-muted admin-lead">{c.subtitle}</p>
-      <p className="admin-muted" style={{ marginTop: '-0.35rem', marginBottom: '1rem' }}>
-        {c.adminHint}
-      </p>
+    <div className="admin-corporate admin-corporate--leads">
+      <section className="admin-corporate__hero">
+        <div>
+          <p className="admin-eyebrow">{c.eyebrow}</p>
+          <h2>{c.title}</h2>
+          <p>{c.subtitle}</p>
+        </div>
+        <div className="admin-corporate__hero-count">
+          <UsersRound size={20} aria-hidden="true" />
+          <strong>{leads.length}</strong>
+          <span>{c.total}</span>
+        </div>
+      </section>
 
-      {listError ? (
-        <ErrorBanner message={listError} onRetry={refresh} retryLabel={c.retry} />
-      ) : null}
+      {error ? <ErrorBanner message={error} onRetry={refresh} retryLabel={c.retry} /> : null}
 
-      <div className="admin-toolbar">
-        <span className="admin-muted">
-          {meta.total} {c.total}
-        </span>
-        <button
-          type="button"
-          className="admin-btn admin-btn--ghost"
-          onClick={refresh}
-          disabled={loading}
-        >
+      <div className="admin-corporate__toolbar">
+        <div>
+          <span className="admin-corporate__toolbar-label">{c.inboxLabel}</span>
+          <strong>{c.inboxHint}</strong>
+        </div>
+        <button type="button" className="admin-btn admin-btn--ghost" onClick={refresh} disabled={loading}>
+          <RefreshCw size={14} aria-hidden="true" />
           {c.refresh}
         </button>
       </div>
 
-      {loading ? <TableSkeleton /> : null}
-
-      {!loading && !listError && rows.length === 0 ? (
-        <p className="admin-empty">{c.empty}</p>
-      ) : null}
-
-      {!loading && rows.length > 0 ? (
-        <div className="admin-table-wrap">
-          <table className="admin-table">
-            <thead>
-              <tr>
-                <th>{c.colName}</th>
-                <th>{c.colBilling}</th>
-                <th>{c.colStatus}</th>
-                <th>{c.colCreated}</th>
-                <th>{c.colId}</th>
-                <th>{c.colActions}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((row) => (
-                <tr
-                  key={row.id}
-                  className={selectedId === row.id ? 'admin-table__row--selected' : undefined}
-                >
-                  <td>
-                    <strong>{row.name}</strong>
-                    {row.notes ? (
-                      <div className="admin-muted" style={{ fontSize: '0.8rem' }}>
-                        {row.notes}
-                      </div>
-                    ) : null}
-                  </td>
-                  <td>{row.billingEmail}</td>
-                  <td>
-                    <ActiveChip
-                      active={row.isActive}
-                      labels={{ active: c.active, inactive: c.inactive }}
-                    />
-                  </td>
-                  <td>
-                    {new Date(row.createdAt).toLocaleString(locale === 'fr' ? 'fr-TN' : 'en-GB', {
-                      dateStyle: 'medium',
-                      timeStyle: 'short',
-                    })}
-                  </td>
-                  <td>
-                    <code title={row.id}>{shortId(row.id)}</code>
-                  </td>
-                  <td>
-                    <button
-                      type="button"
-                      className="admin-btn admin-btn--ghost"
-                      onClick={() => selectAccount(row)}
-                    >
-                      {c.useForLink}
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      {loading ? (
+        <div className="admin-corporate__loading" aria-live="polite">
+          <span className="admin-skel" />
+          <span className="admin-skel" />
+          <span className="admin-skel" />
         </div>
       ) : null}
 
-      {!loading && meta.total > meta.limit ? (
-        <div className="admin-pager">
-          <span>
-            {c.page} {meta.page} {c.of} {totalPages}
-          </span>
-          <div className="admin-pager__btns">
-            <button
-              type="button"
-              className="admin-btn admin-btn--ghost"
-              disabled={page <= 1}
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-            >
-              {c.prev}
-            </button>
-            <button
-              type="button"
-              className="admin-btn admin-btn--ghost"
-              disabled={page >= totalPages}
-              onClick={() => setPage((p) => p + 1)}
-            >
-              {c.next}
-            </button>
-          </div>
+      {!loading && !error && !leads.length ? (
+        <div className="admin-corporate__empty">
+          <Building2 size={24} aria-hidden="true" />
+          <strong>{c.emptyTitle}</strong>
+          <p>{c.empty}</p>
         </div>
       ) : null}
 
-      <div className="admin-detail-grid" style={{ marginTop: '1.25rem' }}>
-        <section className="admin-panel">
-          <h3>{c.createTitle}</h3>
-          <p className="admin-muted" style={{ marginTop: 0, marginBottom: '0.75rem' }}>
-            {c.createHint}
-          </p>
-          {createError ? <ErrorBanner message={createError} /> : null}
-          {createOk ? <SuccessBanner message={createOk} /> : null}
-          <form className="admin-form" onSubmit={onCreate} noValidate>
-            <label className="admin-field">
-              {c.fields.name}
-              <input
-                name="name"
-                value={createForm.name}
-                onChange={(e) => {
-                  setCreateForm((prev) => ({ ...prev, name: e.target.value }));
-                  setCreateErrors((prev) => {
-                    if (!prev.name) return prev;
-                    const next = { ...prev };
-                    delete next.name;
-                    return next;
-                  });
-                }}
-                aria-invalid={Boolean(createErrors.name)}
-                disabled={createBusy}
-                autoComplete="organization"
-              />
-              {createErrors.name ? (
-                <span className="admin-field__error">{fieldError(createErrors, 'name')}</span>
-              ) : null}
-            </label>
-            <label className="admin-field">
-              {c.fields.billingEmail}
-              <input
-                name="billingEmail"
-                type="email"
-                value={createForm.billingEmail}
-                onChange={(e) => {
-                  setCreateForm((prev) => ({ ...prev, billingEmail: e.target.value }));
-                  setCreateErrors((prev) => {
-                    if (!prev.billingEmail) return prev;
-                    const next = { ...prev };
-                    delete next.billingEmail;
-                    return next;
-                  });
-                }}
-                aria-invalid={Boolean(createErrors.billingEmail)}
-                disabled={createBusy}
-                autoComplete="email"
-              />
-              {createErrors.billingEmail ? (
-                <span className="admin-field__error">{fieldError(createErrors, 'billingEmail')}</span>
-              ) : null}
-            </label>
-            <label className="admin-field">
-              {c.fields.notes}
-              <textarea
-                name="notes"
-                rows={3}
-                value={createForm.notes}
-                onChange={(e) => setCreateForm((prev) => ({ ...prev, notes: e.target.value }))}
-                disabled={createBusy}
-              />
-              <span className="admin-field__hint">{c.notesHint}</span>
-            </label>
-            <div className="admin-form-actions">
-              <button type="submit" className="admin-btn admin-btn--primary" disabled={createBusy}>
-                {createBusy ? c.creating : c.create}
-              </button>
-            </div>
-          </form>
-        </section>
-
-        <section className="admin-panel">
-          <h3>{c.linkTitle}</h3>
-          <p className="admin-muted" style={{ marginTop: 0, marginBottom: '0.75rem' }}>
-            {c.linkHint}
-          </p>
-          {linkError ? <ErrorBanner message={linkError} /> : null}
-          {linkOk ? <SuccessBanner message={linkOk} /> : null}
-
-          <div className="admin-locale-tabs" role="group" aria-label={c.modeLabel}>
-            <button
-              type="button"
-              className={linkMode === 'link' ? 'is-active' : ''}
-              onClick={() => setLinkMode('link')}
-              disabled={linkBusy}
-            >
-              {c.modeLink}
-            </button>
-            <button
-              type="button"
-              className={linkMode === 'invite' ? 'is-active' : ''}
-              onClick={() => setLinkMode('invite')}
-              disabled={linkBusy}
-            >
-              {c.modeInvite}
-            </button>
-          </div>
-
-          <form className="admin-form" onSubmit={onLink} noValidate>
-            <label className="admin-field">
-              {c.fields.accountId}
-              <input
-                name="corporateAccountId"
-                value={linkForm.corporateAccountId}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  setLinkForm((prev) => ({ ...prev, corporateAccountId: value }));
-                  setSelectedId(isUuid(value) ? value.trim() : '');
-                  setLinkErrors((prev) => {
-                    if (!prev.corporateAccountId) return prev;
-                    const next = { ...prev };
-                    delete next.corporateAccountId;
-                    return next;
-                  });
-                }}
-                aria-invalid={Boolean(linkErrors.corporateAccountId)}
-                disabled={linkBusy}
-                placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-                spellCheck={false}
-              />
-              {linkErrors.corporateAccountId ? (
-                <span className="admin-field__error">
-                  {fieldError(linkErrors, 'corporateAccountId')}
-                </span>
-              ) : (
-                <span className="admin-field__hint">{c.accountIdHint}</span>
-              )}
-            </label>
-
-            {linkMode === 'link' ? (
-              <>
-                <label className="admin-field">
-                  {c.fields.userId}
-                  <input
-                    name="userId"
-                    value={linkForm.userId}
-                    onChange={(e) => {
-                      setLinkForm((prev) => ({ ...prev, userId: e.target.value }));
-                      setLinkErrors((prev) => {
-                        if (!prev.userId && !prev.email) return prev;
-                        const next = { ...prev };
-                        delete next.userId;
-                        delete next.email;
-                        return next;
-                      });
-                    }}
-                    aria-invalid={Boolean(linkErrors.userId)}
-                    disabled={linkBusy}
-                    spellCheck={false}
-                  />
-                  {linkErrors.userId ? (
-                    <span className="admin-field__error">{fieldError(linkErrors, 'userId')}</span>
-                  ) : (
-                    <span className="admin-field__hint">{c.userIdHint}</span>
-                  )}
-                </label>
-                <label className="admin-field">
-                  {c.fields.email}
-                  <input
-                    name="email"
-                    type="email"
-                    value={linkForm.email}
-                    onChange={(e) => {
-                      setLinkForm((prev) => ({ ...prev, email: e.target.value }));
-                      setLinkErrors((prev) => {
-                        if (!prev.userId && !prev.email) return prev;
-                        const next = { ...prev };
-                        delete next.userId;
-                        delete next.email;
-                        return next;
-                      });
-                    }}
-                    aria-invalid={Boolean(linkErrors.email)}
-                    disabled={linkBusy}
-                    autoComplete="off"
-                  />
-                  {linkErrors.email ? (
-                    <span className="admin-field__error">{fieldError(linkErrors, 'email')}</span>
-                  ) : (
-                    <span className="admin-field__hint">{c.emailLinkHint}</span>
-                  )}
-                </label>
-              </>
-            ) : (
-              <>
-                <label className="admin-field">
-                  {c.fields.email}
-                  <input
-                    name="email"
-                    type="email"
-                    value={linkForm.email}
-                    onChange={(e) => {
-                      setLinkForm((prev) => ({ ...prev, email: e.target.value }));
-                      setLinkErrors((prev) => {
-                        if (!prev.email) return prev;
-                        const next = { ...prev };
-                        delete next.email;
-                        return next;
-                      });
-                    }}
-                    aria-invalid={Boolean(linkErrors.email)}
-                    disabled={linkBusy}
-                    autoComplete="off"
-                  />
-                  {linkErrors.email ? (
-                    <span className="admin-field__error">{fieldError(linkErrors, 'email')}</span>
-                  ) : null}
-                </label>
-                <label className="admin-field">
-                  {c.fields.managerName}
-                  <input
-                    name="name"
-                    value={linkForm.name}
-                    onChange={(e) => {
-                      setLinkForm((prev) => ({ ...prev, name: e.target.value }));
-                      setLinkErrors((prev) => {
-                        if (!prev.name) return prev;
-                        const next = { ...prev };
-                        delete next.name;
-                        return next;
-                      });
-                    }}
-                    aria-invalid={Boolean(linkErrors.name)}
-                    disabled={linkBusy}
-                    autoComplete="name"
-                  />
-                  {linkErrors.name ? (
-                    <span className="admin-field__error">{fieldError(linkErrors, 'name')}</span>
-                  ) : null}
-                </label>
-                <label className="admin-field">
-                  {c.fields.password}
-                  <input
-                    name="password"
-                    type="password"
-                    value={linkForm.password}
-                    onChange={(e) => {
-                      setLinkForm((prev) => ({ ...prev, password: e.target.value }));
-                      setLinkErrors((prev) => {
-                        if (!prev.password) return prev;
-                        const next = { ...prev };
-                        delete next.password;
-                        return next;
-                      });
-                    }}
-                    aria-invalid={Boolean(linkErrors.password)}
-                    disabled={linkBusy}
-                    minLength={8}
-                    autoComplete="new-password"
-                  />
-                  {linkErrors.password ? (
-                    <span className="admin-field__error">{fieldError(linkErrors, 'password')}</span>
-                  ) : (
-                    <span className="admin-field__hint">{c.passwordHint}</span>
-                  )}
-                </label>
-                <label className="admin-field">
-                  {c.fields.phone}
-                  <input
-                    name="phone"
-                    type="tel"
-                    value={linkForm.phone}
-                    onChange={(e) => setLinkForm((prev) => ({ ...prev, phone: e.target.value }))}
-                    disabled={linkBusy}
-                    placeholder="+216…"
-                    autoComplete="tel"
-                  />
-                </label>
-                <label className="admin-field">
-                  {c.fields.locale}
-                  <select
-                    name="locale"
-                    value={linkForm.locale}
-                    onChange={(e) =>
-                      setLinkForm((prev) => ({
-                        ...prev,
-                        locale: /** @type {'en' | 'fr'} */ (e.target.value),
-                      }))
-                    }
-                    disabled={linkBusy}
-                  >
-                    <option value="en">EN</option>
-                    <option value="fr">FR</option>
-                  </select>
-                </label>
-              </>
-            )}
-
-            <div className="admin-form-actions">
-              <button type="submit" className="admin-btn admin-btn--primary" disabled={linkBusy}>
-                {linkBusy ? c.linking : linkMode === 'invite' ? c.invite : c.link}
-              </button>
-            </div>
-          </form>
-        </section>
-      </div>
+      {!loading && leads.length ? (
+        <div className="admin-corporate__lead-grid">
+          {leads.map((lead) => (
+            <LeadCard key={lead.id} lead={lead} copy={copy} navigate={navigate} />
+          ))}
+        </div>
+      ) : null}
     </div>
   );
 }

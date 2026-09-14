@@ -40,3 +40,30 @@ model DeliveryLog {
   @@index([eventName])
   @@map("delivery_logs")
 }
+
+/// Durable staff inbox entries. Read state is per staff user and does not alter the domain record.
+model OpsNotification {
+  id        String                 @id @default(uuid())
+  kind      String
+  entityId  String
+  href      String
+  payload   Json
+  createdAt DateTime               @default(now())
+  reads     OpsNotificationRead[]
+
+  @@unique([kind, entityId])
+  @@index([createdAt])
+  @@map("ops_notifications")
+}
+
+model OpsNotificationRead {
+  id             String          @id @default(uuid())
+  notificationId String
+  userId         String
+  readAt         DateTime        @default(now())
+  notification   OpsNotification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+
+  @@unique([notificationId, userId])
+  @@index([userId, readAt])
+  @@map("ops_notification_reads")
+}
