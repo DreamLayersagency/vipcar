@@ -1,0 +1,23 @@
+{
+  "name": "@vipcar/web-v2",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "VIPCAR View 2: independent demo frontend on the shared VIPCAR gateway, served under /v2/.",
+  "scripts": {
+    "dev": "vite --mode demo",
+    "build": "vite build --mode demo",
+    "build:demo": "vite build --mode demo",
+    "preview": "vite preview --mode demo",
+    "extract-content": "node scripts/extract-app1-content.mjs ../web/src/main.jsx src/content/app1-content.js"
+  },
+  "dependencies": {
+    "lucide-react": "1.31.0",
+    "react": "19.2.8",
+    "react-dom": "19.2.8"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "6.0.5",
+    "vite": "8.2.1"
+  }
+}

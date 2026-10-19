@@ -1,0 +1,11 @@
+{
+  "name": "@vipcar/web-client",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Framework-free browser client for the VIPCAR gateway, shared by demo frontends (View 2, View 3…).",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "node --test \"test/*.test.js\""
+  }
+}

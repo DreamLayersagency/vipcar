@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 108" role="img" aria-labelledby="title desc">
+  <title id="title">VIPCAR Tunisia</title>
+  <desc id="desc">VIPCAR wordmark with a geometric road-inspired V symbol.</desc>
+  <g fill="#101c19">
+    <path d="M8 10h43c11 0 20 3 29 8l14 8h39c12 0 22 3 32 8h-56c-12 0-22-2-32-7l-12-6H32l40 60c3 4 8 4 11 0l24-39c10-16 26-28 49-35l23-7-25 13c-17 8-29 20-38 35L92 92c-6 10-20 10-27 0L8 10Z"/>
+  </g>
+  <path fill="#df432b" d="M46 49c20-19 49-29 88-32-31 10-55 26-72 51L52 79 46 68c-3-6-3-13 0-19Z"/>
+  <g fill="#101c19" font-family="Manrope, Arial, Helvetica, sans-serif">
+    <text x="187" y="70" font-size="50" font-weight="800" letter-spacing="4.5">VIPCAR</text>
+  </g>
+</svg>

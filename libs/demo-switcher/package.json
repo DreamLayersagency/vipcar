@@ -1,0 +1,11 @@
+{
+  "name": "@vipcar/demo-switcher",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Registry of VIPCAR demo frontends and the discreet view switcher shown in demo builds.",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "node --test \"test/*.test.js\""
+  }
+}

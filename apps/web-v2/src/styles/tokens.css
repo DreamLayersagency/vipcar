@@ -1,0 +1,45 @@
+/* View 2 design tokens — VIPCAR palette, bold condensed typography. */
+:root {
+  --ink: #0e0f0d;
+  --charcoal: #161815;
+  --panel: #1f211d;
+  --panel-2: #262924;
+  --line-dark: #33362f;
+  --paper: #ffffff;
+  --mist: #f2f2ef;
+  --line: #e1e1dc;
+  --text: #2b2b2b;
+  --muted: #62655f;
+  --muted-light: #b4b8b1;
+  --accent: #d94a2b;          /* VIPCAR accent: large text, fills, borders */
+  --accent-strong: #b83a1f;   /* AA with white for small text on buttons */
+  --accent-bright: #ef7350;   /* AA on dark panels for small labels */
+  --accent-soft: #fbe9e3;
+  --success: #1d7a52;
+  --wa: #1c7c5c;
+  --wa-hover: #16654a;
+
+  --font-display: 'Barlow Condensed', 'Arial Narrow', 'Noto Sans Arabic', sans-serif;
+  --font-body: 'Barlow', system-ui, -apple-system, 'Segoe UI', 'Noto Sans Arabic', sans-serif;
+
+  --max: 1320px;
+  --gutter: clamp(16px, 4vw, 40px);
+  --radius: 4px;
+  --radius-lg: 8px;
+  --shadow-card: 0 1px 2px rgba(14, 15, 13, .06), 0 10px 30px rgba(14, 15, 13, .06);
+  --shadow-pop: 0 18px 48px rgba(14, 15, 13, .28);
+  --ease: cubic-bezier(.22, 1, .36, 1);
+  --fast: 160ms;
+
+  --header-h: 84px;
+  --utility-h: 38px;
+}
+
+html[lang='ar'] {
+  --font-display: 'Noto Sans Arabic', 'Barlow Condensed', sans-serif;
+  --font-body: 'Noto Sans Arabic', 'Barlow', system-ui, sans-serif;
+}
+
+@media (max-width: 1024px) {
+  :root { --header-h: 68px; }
+}

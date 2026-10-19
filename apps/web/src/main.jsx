@@ -33,7 +33,7 @@ import {
   listMyBookings,
 } from './bookings';
 import { FLEET_SEED as fleet, FLEET_CATEGORIES } from './fleet-seed';
-import { fleetOfflineMessage, loadFleet, loadVehiclePage } from './catalog';
+import { fleetOfflineMessage, isPrerenderBuild, loadFleet, loadVehiclePage } from './catalog';
 import { CURRENCIES, CURRENCY_STORAGE_KEY, formatCurrency, getCurrency, getInitialCurrency } from './currency';
 import { AdminApp, isAdminPathname } from './admin';
 import './admin/admin.css';
@@ -1195,3 +1195,9 @@ function Seo({lang,parts}) { useEffect(()=>{let title=text(lang,'Car Rental in T
 }
 
 createRoot(document.getElementById('root')).render(<React.StrictMode><App/></React.StrictMode>);
+
+// Client demos only (`vite --mode demo`): discreet switcher between demo views (libs/demo-switcher).
+// Normal dev/build never include it; it hides itself on /admin and is skipped during prerender.
+if(import.meta.env.MODE==='demo'&&!isPrerenderBuild()){
+  import('../../../libs/demo-switcher/src/index.js').then(({mountDemoSwitcher})=>mountDemoSwitcher({currentViewId:'view-1'}));
+}
